@@ -1,0 +1,385 @@
+/* ===== 로비 화면 스타일 ===== */
+.lobby-container, .settings-container {
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.lobby-container h2, .settings-container h2 {
+    text-align: center;
+    font-size: 2rem;
+    color: #4ecdc4;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+}
+
+/* ===== 탭 시스템 ===== */
+.lobby-tabs {
+    display: flex;
+    margin-bottom: 2rem;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: #b0b0b0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(78, 205, 196, 0.3);
+}
+
+/* ===== 로비 패널 ===== */
+.lobby-panel {
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.lobby-panel.active {
+    display: flex;
+}
+
+/* ===== 입력 필드 스타일 ===== */
+input[type="text"], select {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: #4ecdc4;
+    box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+}
+
+input[type="text"]::placeholder {
+    color: #666;
+}
+
+select option {
+    background: #2a2a2a;
+    color: #ffffff;
+}
+
+/* ===== 방 목록 ===== */
+.room-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.room-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.3s ease;
+    cursor: pointer;
+}
+
+.room-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.room-item:last-child {
+    border-bottom: none;
+}
+
+.room-info {
+    flex: 1;
+}
+
+.room-name {
+    font-weight: 600;
+    color: #4ecdc4;
+    margin-bottom: 0.3rem;
+}
+
+.room-details {
+    font-size: 0.8rem;
+    color: #b0b0b0;
+}
+
+.room-join-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.room-join-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+}
+
+.room-join-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ===== 빠른 매칭 ===== */
+.quick-match-info {
+    text-align: center;
+    padding: 2rem;
+}
+
+.quick-match-info p {
+    color: #b0b0b0;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.matching-status {
+    margin: 2rem 0;
+}
+
+.matching-status p {
+    color: #4ecdc4;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+/* ===== 설정 화면 스타일 ===== */
+.setting-group {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 0.8rem;
+    color: #4ecdc4;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* ===== 슬라이더 스타일 ===== */
+input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    outline: none;
+    -webkit-appearance: none;
+    margin: 1rem 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(78, 205, 196, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 10px rgba(78, 205, 196, 0.4);
+}
+
+.volume-value {
+    float: right;
+    color: #4ecdc4;
+    font-weight: 600;
+}
+
+/* ===== 체크박스 스타일 ===== */
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.8rem;
+    accent-color: #4ecdc4;
+    cursor: pointer;
+}
+
+.setting-group label:has(input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+/* ===== 알림 및 토스트 메시지 ===== */
+.toast {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast.success {
+    background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+}
+
+.toast.error {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+}
+
+.toast.warning {
+    background: linear-gradient(135deg, #feca57, #ff9ff3);
+}
+
+.toast.info {
+    background: linear-gradient(135deg, #54a0ff, #5f27cd);
+}
+
+/* ===== 모달 다이얼로그 ===== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2rem;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.modal-content h3 {
+    color: #4ecdc4;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.modal-content p {
+    color: #b0b0b0;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* ===== 반응형 디자인 (UI) ===== */
+@media (max-width: 768px) {
+    .lobby-container, .settings-container {
+        padding: 1.5rem;
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .lobby-tabs {
+        flex-direction: column;
+    }
+    
+    .tab-btn {
+        border-radius: 0;
+    }
+    
+    .tab-btn:first-child {
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .tab-btn:last-child {
+        border-radius: 0 0 8px 8px;
+    }
+    
+    .room-item {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .room-join-btn {
+        width: 100%;
+    }
+    
+    .modal-buttons {
+        flex-direction: column;
+    }
+    
+    .toast {
+        top: 1rem;
+        right: 1rem;
+        left: 1rem;
+        transform: translateY(-100%);
+    }
+    
+    .toast.show {
+        transform: translateY(0);
+    }
+}
+
+/* ===== 접근성 개선 (UI) ===== */
+.tab-btn:focus, input:focus, .room-join-btn:focus {
+    outline: 2px solid #4ecdc4;
+    outline-offset: 2px;
+}
