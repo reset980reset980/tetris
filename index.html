@@ -64,6 +64,28 @@
                     <div id="lines" class="lines-value">0</div>
                 </div>
                 
+                <div class="combo-section">
+                    <h3>콤보</h3>
+                    <div id="combo" class="combo-value">0</div>
+                </div>
+                
+                <div class="attack-section">
+                    <h3>공격력</h3>
+                    <div id="totalAttack" class="attack-value">0</div>
+                </div>
+                
+                <div class="status-section">
+                    <div id="backToBackIndicator" class="status-indicator hidden">
+                        <span class="b2b-text">B2B!</span>
+                    </div>
+                    <div id="tSpinIndicator" class="status-indicator hidden">
+                        <span class="tspin-text">T-SPIN!</span>
+                    </div>
+                    <div id="shieldIndicator" class="status-indicator hidden">
+                        <span class="shield-text">🛡️ SHIELD</span>
+                    </div>
+                </div>
+                
                 <div class="next-block-section">
                     <h3>다음 블록</h3>
                     <canvas id="nextBlockCanvas" width="120" height="120"></canvas>
@@ -77,6 +99,9 @@
                     <div class="game-over-content">
                         <h2>게임 오버!</h2>
                         <p>최종 점수: <span id="finalScore">0</span></p>
+                        <div class="final-stats">
+                            <!-- 게임 통계가 동적으로 생성됩니다 -->
+                        </div>
                         <button id="restartBtn" class="menu-btn primary">다시 시작</button>
                         <button id="backToMenuBtn" class="menu-btn secondary">메인 메뉴</button>
                     </div>
@@ -111,11 +136,11 @@
                         <div class="item-icon">⚡</div>
                         <div class="item-count">0</div>
                     </div>
-                    <div class="item-slot" data-item="clear">
+                    <div class="item-slot" data-item="lineClear">
                         <div class="item-icon">💫</div>
                         <div class="item-count">0</div>
                     </div>
-                    <div class="item-slot" data-item="slow">
+                    <div class="item-slot" data-item="slowDown">
                         <div class="item-icon">🐌</div>
                         <div class="item-count">0</div>
                     </div>
@@ -137,6 +162,12 @@
             </div>
             <div class="control-item">
                 <span class="key">SPACE</span> 즉시 하강
+            </div>
+            <div class="control-item">
+                <span class="key">C</span> 홀드
+            </div>
+            <div class="control-item">
+                <span class="key">1-4</span> 아이템 사용
             </div>
         </div>
     </div>

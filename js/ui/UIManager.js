@@ -156,25 +156,25 @@ export class UIManager {
         const currentCount = parseInt(countElement.textContent) || 0;
         if (currentCount <= 0) return;
         
-        // 아이템 사용 로직
-        switch (itemType) {
-            case 'shield':
-                this.activateShield();
-                break;
-            case 'attack':
-                this.sendAttack();
-                break;
-            case 'clear':
-                this.clearLines();
-                break;
-            case 'slow':
-                this.slowOpponents();
-                break;
+        // GameManager를 통해 아이템 사용
+        if (this.app.gameManager && this.app.gameManager.useItem) {
+            const success = this.app.gameManager.useItem(itemType);
+            
+            if (success) {
+                // 아이템 수량 감소
+                this.updateItemCount(itemType, currentCount - 1);
+                this.showToast(`${this.getItemName(itemType)} 아이템을 사용했습니다!`, 'success');
+                
+                // 오디오 피드백
+                if (this.app.audioManager) {
+                    this.app.audioManager.playItemUseSound(itemType);
+                }
+            } else {
+                this.showToast(`${this.getItemName(itemType)} 아이템을 사용할 수 없습니다.`, 'warning');
+            }
+        } else {
+            this.showToast('게임이 진행 중이 아닙니다.', 'warning');
         }
-        
-        // 아이템 수량 감소
-        this.updateItemCount(itemType, currentCount - 1);
-        this.showToast(`${this.getItemName(itemType)} 아이템을 사용했습니다!`, 'info');
     }
     
     updateItemCount(itemType, count) {
@@ -197,18 +197,21 @@ export class UIManager {
         const names = {
             shield: '방어막',
             attack: '공격',
-            clear: '라인 클리어',
-            slow: '속도 감소'
+            lineClear: '라인 클리어',
+            slowDown: '속도 감소'
         };
         return names[itemType] || itemType;
     }
     
     // ===== 게임 정보 업데이트 =====
-    updateGameInfo(score, level, lines) {
+    updateGameInfo(score, level, lines, combo = 0, totalAttack = 0, backToBack = false, tSpinType = null, items = {}) {
         const scoreElement = document.getElementById('score');
         const levelElement = document.getElementById('level');
         const linesElement = document.getElementById('lines');
+        const comboElement = document.getElementById('combo');
+        const attackElement = document.getElementById('totalAttack');
         
+        // 기본 게임 정보 업데이트
         if (scoreElement) {
             // 점수 애니메이션 효과
             const oldScore = parseInt(scoreElement.textContent.replace(/,/g, '')) || 0;
@@ -235,6 +238,139 @@ export class UIManager {
         if (linesElement) {
             linesElement.textContent = lines;
         }
+        
+        // 콤보 업데이트
+        if (comboElement) {
+            const oldCombo = parseInt(comboElement.textContent) || 0;
+            comboElement.textContent = combo;
+            
+            if (combo > oldCombo && combo > 0) {
+                comboElement.classList.add('active');
+                setTimeout(() => {
+                    comboElement.classList.remove('active');
+                }, 300);
+            }
+        }
+        
+        // 공격력 업데이트
+        if (attackElement) {
+            attackElement.textContent = totalAttack;
+        }
+        
+        // 상태 인디케이터 업데이트
+        this.updateStatusIndicators(backToBack, tSpinType);
+        
+        // 아이템 수량 업데이트
+        this.updateItemCounts(items);
+    }
+    
+    // ===== 상태 인디케이터 업데이트 =====
+    updateStatusIndicators(backToBack = false, tSpinType = null) {
+        const b2bIndicator = document.getElementById('backToBackIndicator');
+        const tSpinIndicator = document.getElementById('tSpinIndicator');
+        const shieldIndicator = document.getElementById('shieldIndicator');
+        
+        // Back-to-Back 인디케이터
+        if (b2bIndicator) {
+            if (backToBack) {
+                b2bIndicator.classList.remove('hidden');
+            } else {
+                b2bIndicator.classList.add('hidden');
+            }
+        }
+        
+        // T-Spin 인디케이터
+        if (tSpinIndicator) {
+            if (tSpinType) {
+                tSpinIndicator.classList.remove('hidden');
+                const textElement = tSpinIndicator.querySelector('.tspin-text');
+                if (textElement) {
+                    textElement.textContent = tSpinType === 'full' ? 'T-SPIN!' : 'T-SPIN MINI!';
+                }
+                
+                // 3초 후 자동 숨김
+                setTimeout(() => {
+                    tSpinIndicator.classList.add('hidden');
+                }, 3000);
+            } else {
+                tSpinIndicator.classList.add('hidden');
+            }
+        }
+    }
+    
+    // ===== 아이템 수량 업데이트 =====
+    updateItemCounts(items = {}) {
+        const itemTypes = ['shield', 'attack', 'lineClear', 'slowDown'];
+        
+        itemTypes.forEach(itemType => {
+            const count = items[itemType] || 0;
+            this.updateItemCount(itemType, count);
+        });
+    }
+    
+    // ===== 실드 상태 업데이트 =====
+    updateShieldStatus(isActive = false) {
+        const shieldIndicator = document.getElementById('shieldIndicator');
+        const body = document.body;
+        
+        if (shieldIndicator) {
+            if (isActive) {
+                shieldIndicator.classList.remove('hidden');
+                body.classList.add('shield-active');
+            } else {
+                shieldIndicator.classList.add('hidden');
+                body.classList.remove('shield-active');
+            }
+        }
+    }
+    
+    // ===== 클리어 알림 표시 =====
+    showClearNotification(clearType, lines = 0) {
+        const gameBoard = document.getElementById('gameBoard');
+        if (!gameBoard) return;
+        
+        const notification = document.createElement('div');
+        notification.className = 'clear-notification';
+        
+        let message = '';
+        switch (clearType) {
+            case 'single':
+                message = 'SINGLE';
+                break;
+            case 'double':
+                message = 'DOUBLE';
+                break;
+            case 'triple':
+                message = 'TRIPLE';
+                break;
+            case 'tetris':
+                message = 'TETRIS!';
+                break;
+            case 'tspin':
+                message = 'T-SPIN!';
+                break;
+            case 'tspin-single':
+                message = 'T-SPIN SINGLE!';
+                break;
+            case 'tspin-double':
+                message = 'T-SPIN DOUBLE!';
+                break;
+            case 'tspin-triple':
+                message = 'T-SPIN TRIPLE!';
+                break;
+            default:
+                message = `${lines} LINES!`;
+        }
+        
+        notification.textContent = message;
+        gameBoard.parentElement.appendChild(notification);
+        
+        // 2초 후 자동 제거
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 2000);
     }
     
     // 숫자 애니메이션
@@ -570,29 +706,44 @@ export class UIManager {
         if (showGhost) showGhost.checked = settings.showGhost;
     }
     
-    // ===== 아이템 효과 구현 =====
-    activateShield() {
-        // 방어막 효과 - 다음 공격을 막음
-        console.log('🛡️ Shield activated');
-        // TODO: 실제 방어막 로직 구현
+    // ===== 키보드 아이템 사용 지원 =====
+    handleItemKeyPress(key) {
+        const itemMap = {
+            '1': 'shield',
+            '2': 'attack', 
+            '3': 'lineClear',
+            '4': 'slowDown'
+        };
+        
+        const itemType = itemMap[key];
+        if (itemType) {
+            this.useItem(itemType);
+        }
     }
     
-    sendAttack() {
-        // 공격 아이템 - 상대방에게 방해 줄 추가
-        console.log('⚡ Attack sent');
-        // TODO: 실제 공격 로직 구현
-    }
-    
-    clearLines() {
-        // 라인 클리어 아이템 - 자신의 아래쪽 줄 몇 개를 제거
-        console.log('💫 Lines cleared');
-        // TODO: 실제 라인 클리어 로직 구현
-    }
-    
-    slowOpponents() {
-        // 속도 감소 아이템 - 상대방의 블록 하강 속도를 잠시 느리게
-        console.log('🐌 Opponents slowed');
-        // TODO: 실제 속도 감소 로직 구현
+    // ===== 게임 종료 시 최종 통계 표시 =====
+    showGameOverStats(stats) {
+        const finalStatsContainer = document.querySelector('.final-stats');
+        if (!finalStatsContainer) return;
+        
+        finalStatsContainer.innerHTML = `
+            <div class="stat-item">
+                <div class="stat-label">최대 콤보</div>
+                <div class="stat-value">${stats.maxCombo || 0}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">총 공격력</div>
+                <div class="stat-value">${stats.totalAttack || 0}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">T-Spin 수</div>
+                <div class="stat-value">${stats.tSpinCount || 0}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">사용한 아이템</div>
+                <div class="stat-value">${stats.itemsUsed || 0}</div>
+            </div>
+        `;
     }
     
     // ===== 정리 =====

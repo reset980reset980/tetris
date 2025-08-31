@@ -113,8 +113,9 @@ export class AudioManager {
             intensity: 0.9
         });
         
-        // 효과음들
+        // 효과음들 (고급 시스템용 추가)
         const soundEffects = {
+            // 기본 게임 사운드
             move: { url: 'assets/sounds/move.ogg', volume: 0.3 },
             rotate: { url: 'assets/sounds/rotate.ogg', volume: 0.4 },
             lock: { url: 'assets/sounds/lock.ogg', volume: 0.5 },
@@ -124,8 +125,40 @@ export class AudioManager {
             gameOver: { url: 'assets/sounds/game_over.ogg', volume: 0.6 },
             hardDrop: { url: 'assets/sounds/hard_drop.ogg', volume: 0.6 },
             hold: { url: 'assets/sounds/hold.ogg', volume: 0.4 },
+            
+            // T-Spin 및 고급 스코어링
+            tSpinSingle: { url: 'assets/sounds/tspin_single.ogg', volume: 0.8 },
+            tSpinDouble: { url: 'assets/sounds/tspin_double.ogg', volume: 0.9 },
+            tSpinTriple: { url: 'assets/sounds/tspin_triple.ogg', volume: 1.0 },
+            backToBack: { url: 'assets/sounds/back_to_back.ogg', volume: 0.9 },
+            combo: { url: 'assets/sounds/combo.ogg', volume: 0.7 },
+            perfectClear: { url: 'assets/sounds/perfect_clear.ogg', volume: 1.0 },
+            
+            // 아이템 시스템
+            itemGet: { url: 'assets/sounds/item_get.ogg', volume: 0.6 },
+            itemUse: { url: 'assets/sounds/item_use.ogg', volume: 0.5 },
+            shieldActivate: { url: 'assets/sounds/shield_activate.ogg', volume: 0.7 },
+            shieldBlock: { url: 'assets/sounds/shield_block.ogg', volume: 0.8 },
+            
+            // 멀티플레이어 및 공격
+            garbageReceived: { url: 'assets/sounds/garbage_received.ogg', volume: 0.8 },
+            garbageSent: { url: 'assets/sounds/garbage_sent.ogg', volume: 0.7 },
+            attackWarning: { url: 'assets/sounds/attack_warning.ogg', volume: 0.9 },
+            playerJoin: { url: 'assets/sounds/player_join.ogg', volume: 0.5 },
+            playerLeave: { url: 'assets/sounds/player_leave.ogg', volume: 0.4 },
+            
+            // UI 사운드
+            menuSelect: { url: 'assets/sounds/menu_select.ogg', volume: 0.3 },
+            menuConfirm: { url: 'assets/sounds/menu_confirm.ogg', volume: 0.4 },
+            menuCancel: { url: 'assets/sounds/menu_cancel.ogg', volume: 0.3 },
+            notification: { url: 'assets/sounds/notification.ogg', volume: 0.6 },
+            
+            // 경고 및 이벤트
             warning: { url: 'assets/sounds/warning.ogg', volume: 0.7 },
-            item: { url: 'assets/sounds/item.ogg', volume: 0.5 }
+            countdown: { url: 'assets/sounds/countdown.ogg', volume: 0.8 },
+            matchStart: { url: 'assets/sounds/match_start.ogg', volume: 0.9 },
+            victory: { url: 'assets/sounds/victory.ogg', volume: 1.0 },
+            defeat: { url: 'assets/sounds/defeat.ogg', volume: 0.8 }
         };
         
         // 실제 구현에서는 여기서 파일들을 fetch하고 디코딩해야 합니다
@@ -429,6 +462,184 @@ export class AudioManager {
             return this.audioContext.suspend();
         }
         return Promise.resolve();
+    }
+    
+    // ===== 고급 사운드 재생 함수들 =====
+    
+    // T-Spin 사운드 재생
+    playTSpinSound(tSpinType, lineCount) {
+        if (tSpinType === 'mini') {
+            this.playSound('tSpinSingle');
+        } else if (tSpinType === 'full') {
+            if (lineCount === 1) {
+                this.playSound('tSpinSingle');
+            } else if (lineCount === 2) {
+                this.playSound('tSpinDouble');
+            } else if (lineCount === 3) {
+                this.playSound('tSpinTriple');
+            }
+        }
+    }
+    
+    // 콤보 사운드 재생 (콤보 수에 따라 피치 변화)
+    playComboSound(comboCount) {
+        const pitchShift = Math.min(comboCount * 0.1, 0.8); // 최대 80% 피치 증가
+        this.playSound('combo', 1.0, 1.0 + pitchShift);
+    }
+    
+    // Back-to-Back 사운드 재생
+    playBackToBackSound() {
+        this.playSound('backToBack');
+    }
+    
+    // 완벽한 클리어 사운드 (보드가 완전히 비워졌을 때)
+    playPerfectClearSound() {
+        this.playSound('perfectClear');
+        
+        // 추가 시각적/청각적 효과
+        setTimeout(() => {
+            this.playSound('combo', 0.5, 1.5);
+        }, 200);
+        
+        setTimeout(() => {
+            this.playSound('combo', 0.3, 2.0);
+        }, 400);
+    }
+    
+    // 아이템 관련 사운드
+    playItemSound(itemType, action = 'use') {
+        switch (action) {
+            case 'get':
+                this.playSound('itemGet');
+                break;
+            case 'use':
+                if (itemType === 'shield') {
+                    this.playSound('shieldActivate');
+                } else {
+                    this.playSound('itemUse');
+                }
+                break;
+            case 'block':
+                this.playSound('shieldBlock');
+                break;
+        }
+    }
+    
+    // 공격 관련 사운드
+    playAttackSound(type, intensity = 1) {
+        switch (type) {
+            case 'send':
+                this.playSound('garbageSent', Math.min(intensity * 0.2 + 0.5, 1.0));
+                break;
+            case 'receive':
+                this.playSound('garbageReceived', Math.min(intensity * 0.1 + 0.6, 1.0));
+                break;
+            case 'warning':
+                this.playSound('attackWarning');
+                break;
+        }
+    }
+    
+    // 멀티플레이어 이벤트 사운드
+    playMultiplayerSound(eventType) {
+        switch (eventType) {
+            case 'playerJoin':
+                this.playSound('playerJoin');
+                break;
+            case 'playerLeave':
+                this.playSound('playerLeave');
+                break;
+            case 'matchStart':
+                this.playSound('matchStart');
+                break;
+            case 'victory':
+                this.playSound('victory');
+                break;
+            case 'defeat':
+                this.playSound('defeat');
+                break;
+        }
+    }
+    
+    // UI 사운드
+    playUISound(action) {
+        switch (action) {
+            case 'select':
+                this.playSound('menuSelect');
+                break;
+            case 'confirm':
+                this.playSound('menuConfirm');
+                break;
+            case 'cancel':
+                this.playSound('menuCancel');
+                break;
+            case 'notification':
+                this.playSound('notification');
+                break;
+        }
+    }
+    
+    // 위험 경고음 재생 (높이가 위험할 때)
+    playDangerWarning(dangerLevel = 1) {
+        if (dangerLevel >= 3) {
+            // 매우 위험 - 빠른 경고음
+            this.playSound('warning', 1.0, 1.5);
+        } else if (dangerLevel >= 2) {
+            // 위험 - 보통 경고음
+            this.playSound('warning', 0.8, 1.2);
+        } else if (dangerLevel >= 1) {
+            // 주의 - 낮은 경고음
+            this.playSound('warning', 0.6, 0.8);
+        }
+    }
+    
+    // 카운트다운 사운드
+    playCountdown(seconds) {
+        if (seconds <= 3 && seconds > 0) {
+            const pitch = seconds === 1 ? 1.5 : 1.0;
+            this.playSound('countdown', 1.0, pitch);
+        }
+    }
+    
+    // 사운드 재생 (피치 조정 기능 추가)
+    playSound(soundName, volume = 1.0, pitchShift = 1.0, delay = 0) {
+        const soundData = this.soundEffects.get(soundName);
+        if (!soundData || !soundData.buffer) {
+            console.warn(`Sound not found: ${soundName}`);
+            return;
+        }
+        
+        const playSound = () => {
+            try {
+                const source = this.audioContext.createBufferSource();
+                const gainNode = this.audioContext.createGain();
+                
+                source.buffer = soundData.buffer;
+                source.playbackRate.value = pitchShift;
+                
+                gainNode.gain.value = (soundData.volume || 0.5) * volume;
+                
+                source.connect(gainNode);
+                gainNode.connect(this.effectGainNode);
+                
+                source.start(this.audioContext.currentTime);
+                
+                // 자동 정리 (재생 완료 후)
+                source.onended = () => {
+                    source.disconnect();
+                    gainNode.disconnect();
+                };
+                
+            } catch (error) {
+                console.error(`Error playing sound ${soundName}:`, error);
+            }
+        };
+        
+        if (delay > 0) {
+            setTimeout(playSound, delay);
+        } else {
+            playSound();
+        }
     }
     
     // ===== 정리 =====

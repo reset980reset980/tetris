@@ -336,3 +336,221 @@
         height: 80px;
     }
 }
+
+/* ===== 고급 게임 UI 요소들 ===== */
+
+/* 콤보 및 공격력 섹션 */
+.combo-section, .attack-section {
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #ff6b6b;
+}
+
+.combo-value, .attack-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #ff6b6b;
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+.combo-value.active {
+    animation: comboPulse 0.3s ease-in-out;
+    color: #4ecdc4;
+}
+
+@keyframes comboPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* 상태 인디케이터 */
+.status-section {
+    margin: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.status-indicator {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    text-align: center;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    animation: statusGlow 1s ease-in-out infinite alternate;
+    transition: all 0.3s ease;
+}
+
+.status-indicator.hidden {
+    display: none;
+}
+
+/* Back-to-Back 인디케이터 */
+#backToBackIndicator {
+    background: linear-gradient(45deg, #ff9800, #f44336);
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.6);
+}
+
+.b2b-text {
+    color: white;
+    font-size: 0.9rem;
+}
+
+/* T-Spin 인디케이터 */
+#tSpinIndicator {
+    background: linear-gradient(45deg, #9c27b0, #e91e63);
+    box-shadow: 0 0 15px rgba(156, 39, 176, 0.6);
+}
+
+.tspin-text {
+    color: white;
+    font-size: 0.9rem;
+}
+
+/* 실드 인디케이터 */
+#shieldIndicator {
+    background: linear-gradient(45deg, #2196f3, #4caf50);
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.6);
+}
+
+.shield-text {
+    color: white;
+    font-size: 0.9rem;
+}
+
+@keyframes statusGlow {
+    0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); }
+    100% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.6); }
+}
+
+/* 실드 활성화 시 전체 화면 효과 */
+body.shield-active {
+    box-shadow: inset 0 0 100px rgba(33, 150, 243, 0.3);
+}
+
+/* 아이템 슬롯 개선 */
+.item-slot {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.item-slot:hover {
+    transform: translateY(-2px);
+}
+
+.item-slot[data-item="shield"]:hover {
+    box-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+}
+
+.item-slot[data-item="attack"]:hover {
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+}
+
+.item-slot[data-item="lineClear"]:hover {
+    box-shadow: 0 0 15px rgba(156, 39, 176, 0.5);
+}
+
+.item-slot[data-item="slowDown"]:hover {
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+}
+
+.item-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #4ecdc4;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.item-count.zero {
+    background: #666;
+    color: #999;
+}
+
+/* 게임 오버 시 통계 개선 */
+.game-over-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.final-stats {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.stat-label {
+    color: #4ecdc4;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+/* T-Spin 및 특수 클리어 알림 */
+.clear-notification {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    animation: clearNotificationShow 2s ease-in-out forwards;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+@keyframes clearNotificationShow {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+}

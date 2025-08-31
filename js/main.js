@@ -184,6 +184,14 @@ class TetrisApp {
         
         // 게임 중일 때만 게임 컨트롤 처리
         if (this.currentScreen === 'game' && this.gameManager && this.gameManager.isPlaying) {
+            // 아이템 사용 키 (1-4)
+            if (['1', '2', '3', '4'].includes(e.key)) {
+                this.uiManager.handleItemKeyPress(e.key);
+                e.preventDefault();
+                return;
+            }
+            
+            // 일반 게임 컨트롤
             this.gameManager.handleKeyDown(e);
         }
     }
@@ -194,28 +202,52 @@ class TetrisApp {
         }
     }
     
-    onGameOver(finalScore, level, lines) {
+    onGameOver(gameStats) {
+        const { score, level, lines, maxCombo, totalAttack, tSpinCount, itemsUsed } = gameStats;
+        
         // 게임 오버 처리
         this.audioManager.playSound('gameOver');
         this.audioManager.stopBackgroundMusic();
         
         // 최종 점수 표시
-        document.getElementById('finalScore').textContent = finalScore.toLocaleString();
+        document.getElementById('finalScore').textContent = score.toLocaleString();
+        
+        // 게임 통계 표시
+        this.uiManager.showGameOverStats({
+            maxCombo,
+            totalAttack,
+            tSpinCount,
+            itemsUsed
+        });
         
         // 게임 오버 오버레이 표시
         document.getElementById('gameOverOverlay').classList.remove('hidden');
         
-        console.log(`🎮 Game Over - Score: ${finalScore}, Level: ${level}, Lines: ${lines}`);
+        console.log(`🎮 Game Over - Score: ${score}, Level: ${level}, Lines: ${lines}, Max Combo: ${maxCombo}, T-Spins: ${tSpinCount}`);
     }
     
-    onLineCleared(lines, score, totalLines, level) {
+    onLineCleared(clearData) {
+        const { lines, score, totalLines, level, combo, totalAttack, backToBack, tSpinType, clearType, items } = clearData;
+        
         // 줄 제거 효과음
-        this.audioManager.playSound('lineClear', lines);
+        if (tSpinType) {
+            this.audioManager.playTSpinSound(tSpinType, lines);
+        } else {
+            this.audioManager.playLineClearSound(lines);
+        }
+        
+        // 콤보 사운드
+        if (combo > 0) {
+            this.audioManager.playComboSound(combo);
+        }
         
         // UI 업데이트
-        this.uiManager.updateGameInfo(score, level, totalLines);
+        this.uiManager.updateGameInfo(score, level, totalLines, combo, totalAttack, backToBack, tSpinType, items);
         
-        console.log(`🎯 Lines cleared: ${lines}, Score: +${score}, Total: ${totalLines}, Level: ${level}`);
+        // 클리어 알림 표시
+        this.uiManager.showClearNotification(clearType, lines);
+        
+        console.log(`🎯 Lines cleared: ${lines}, Score: +${score}, Total: ${totalLines}, Level: ${level}, Combo: ${combo}, Attack: ${totalAttack}`);
     }
     
     onLevelUp(newLevel) {
@@ -314,7 +346,7 @@ class TetrisApp {
 window.tetrisApp = new TetrisApp();
 
 // 개발용 디버그 정보
-if (process?.env?.NODE_ENV === 'development') {
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     console.log('🚀 Tetris App loaded in development mode');
     window.DEBUG = {
         gameManager: () => window.tetrisApp.gameManager,

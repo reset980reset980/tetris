@@ -49,6 +49,23 @@ export class GameManager {
         this.playerId = null;
         this.opponents = new Map();
         
+        // 고급 스코어링 시스템
+        this.combo = 0;
+        this.backToBack = false;
+        this.totalAttack = 0;
+        this.lastAction = null;
+        this.tSpinType = null;
+        
+        // 아이템 시스템
+        this.items = {
+            shield: 0,      // 🛡️ 방어막
+            attack: 0,      // ⚡ 공격
+            lineClear: 0,   // 💫 라인 클리어
+            slowDown: 0     // 🐌 속도 감소
+        };
+        this.shieldActive = false;
+        this.garbageLines = [];
+        
         this.init();
     }
     
@@ -275,6 +292,18 @@ export class GameManager {
             case 'KeyC':
                 this.holdTetromino();
                 break;
+            case 'Digit1':
+                this.useItem('shield');
+                break;
+            case 'Digit2':
+                this.useItem('attack');
+                break;
+            case 'Digit3':
+                this.useItem('lineClear');
+                break;
+            case 'Digit4':
+                this.useItem('slowDown');
+                break;
         }
     }
     
@@ -366,6 +395,9 @@ export class GameManager {
     lockTetromino() {
         if (!this.currentTetromino) return;
         
+        // T-spin 감지 (고정 전에 검사)
+        this.detectTSpin();
+        
         // 보드에 블록 배치
         this.board.placeTetromino(this.currentTetromino);
         
@@ -374,6 +406,10 @@ export class GameManager {
         
         if (completedLines.length > 0) {
             this.clearLines(completedLines);
+        } else {
+            // 줄 제거가 없으면 콤보 리셋
+            this.combo = 0;
+            this.tSpinType = null;
         }
         
         // 다음 테트로미노 스폰
@@ -383,24 +419,96 @@ export class GameManager {
         this.app.audioManager?.playSound('lock');
     }
     
-    // 줄 제거 처리
+    // T-spin 감지
+    detectTSpin() {
+        if (!this.currentTetromino || this.currentTetromino.type !== 'T') {
+            this.tSpinType = null;
+            return;
+        }
+        
+        const pos = this.currentTetromino;
+        const corners = [
+            { x: pos.x, y: pos.y },           // 좌상단
+            { x: pos.x + 2, y: pos.y },       // 우상단
+            { x: pos.x, y: pos.y + 2 },       // 좌하단
+            { x: pos.x + 2, y: pos.y + 2 }    // 우하단
+        ];
+        
+        let filledCorners = 0;
+        let frontCorners = 0;
+        
+        // 3-corner rule과 front-corner rule 검사
+        for (let i = 0; i < corners.length; i++) {
+            const corner = corners[i];
+            if (!this.board.isEmpty(corner.x, corner.y)) {
+                filledCorners++;
+                if (this.isFrontCorner(i, pos.rotation)) {
+                    frontCorners++;
+                }
+            }
+        }
+        
+        if (filledCorners >= 3) {
+            this.tSpinType = frontCorners >= 2 ? 'full' : 'mini';
+        } else {
+            this.tSpinType = null;
+        }
+    }
+    
+    // Front corner 판정
+    isFrontCorner(cornerIndex, rotation) {
+        const frontCorners = [
+            [0, 1], // rotation 0: 좌상단, 우상단
+            [1, 3], // rotation 1: 우상단, 우하단  
+            [2, 3], // rotation 2: 좌하단, 우하단
+            [0, 2]  // rotation 3: 좌상단, 좌하단
+        ];
+        return frontCorners[rotation].includes(cornerIndex);
+    }
+    
+    // 줄 제거 처리 (고급 스코어링)
     clearLines(lines) {
         const lineCount = lines.length;
         
-        // 점수 계산 (한 줄: 10점, 두 줄: 30점, 세 줄: 60점, 네 줄: 100점)
-        const scoreMap = { 1: 10, 2: 30, 3: 60, 4: 100 };
-        const baseScore = scoreMap[lineCount] || 0;
-        const levelMultiplier = this.level;
-        const earnedScore = baseScore * levelMultiplier;
+        // 콤보 증가
+        this.combo++;
+        
+        // 공격력 계산
+        const attackPower = this.calculateAttack(lineCount);
+        
+        // 점수 계산
+        const scoreData = this.calculateAdvancedScore(lineCount);
+        const earnedScore = scoreData.score * this.level;
         
         this.score += earnedScore;
         this.lines += lineCount;
         this.totalLines += lineCount;
+        this.totalAttack += attackPower;
+        
+        // Back-to-Back 판정 업데이트
+        const isSpecialClear = lineCount === 4 || this.tSpinType;
+        if (isSpecialClear) {
+            if (this.lastAction === 'special') {
+                this.backToBack = true;
+            }
+            this.lastAction = 'special';
+        } else {
+            this.lastAction = 'normal';
+            this.backToBack = false;
+        }
         
         // 레벨업 검사 (1000점마다)
         const newLevel = Math.floor(this.score / 1000) + 1;
         if (newLevel > this.level) {
             this.levelUp(newLevel);
+        }
+        
+        // 아이템 획득 확률 (레어한 클리어일수록 높음)
+        this.checkItemDrop(scoreData.rarity);
+        
+        // 멀티플레이어에서 공격 전송
+        if (this.gameMode !== 'single' && attackPower > 0) {
+            this.sendAttack(attackPower);
         }
         
         // 줄 제거 애니메이션
@@ -409,7 +517,128 @@ export class GameManager {
         // 이벤트 알림
         this.app.onLineCleared?.(lineCount, earnedScore, this.totalLines, this.level);
         
-        console.log(`✨ Cleared ${lineCount} lines, +${earnedScore} points`);
+        // 상세한 클리어 정보 로그
+        let clearType = '';
+        if (this.tSpinType) {
+            clearType = `T-Spin ${this.tSpinType} ${lineCount === 1 ? 'Single' : lineCount === 2 ? 'Double' : 'Triple'}`;
+        } else if (lineCount === 4) {
+            clearType = 'Tetris';
+        } else {
+            clearType = `${lineCount} Line${lineCount > 1 ? 's' : ''}`;
+        }
+        
+        console.log(`✨ ${clearType} Clear! Combo: ${this.combo}, Attack: ${attackPower}, Score: +${earnedScore}${this.backToBack ? ' (B2B)' : ''}`);
+    }
+    
+    // 고급 점수 계산
+    calculateAdvancedScore(lineCount) {
+        let baseScore = 0;
+        let multiplier = 1;
+        let rarity = 'common';
+        
+        if (this.tSpinType) {
+            // T-Spin 점수
+            const tSpinScores = {
+                'mini': { 1: 100, 2: 200 },
+                'full': { 1: 200, 2: 400, 3: 600 }
+            };
+            baseScore = tSpinScores[this.tSpinType][lineCount] || 0;
+            rarity = 'rare';
+        } else {
+            // 일반 점수
+            const scoreMap = { 1: 40, 2: 100, 3: 300, 4: 1200 };
+            baseScore = scoreMap[lineCount] || 0;
+            if (lineCount === 4) rarity = 'uncommon';
+        }
+        
+        // Back-to-Back 보너스
+        if (this.backToBack && (lineCount === 4 || this.tSpinType)) {
+            multiplier *= 1.5;
+            rarity = 'epic';
+        }
+        
+        // 콤보 보너스
+        if (this.combo > 1) {
+            multiplier += (this.combo - 1) * 0.5;
+        }
+        
+        return {
+            score: Math.floor(baseScore * multiplier),
+            rarity: rarity
+        };
+    }
+    
+    // 공격력 계산
+    calculateAttack(lineCount) {
+        let attack = 0;
+        
+        if (this.tSpinType) {
+            // T-Spin 공격력
+            const tSpinAttack = {
+                'mini': { 1: 0, 2: 1 },
+                'full': { 1: 2, 2: 4, 3: 6 }
+            };
+            attack = tSpinAttack[this.tSpinType][lineCount] || 0;
+        } else {
+            // 일반 공격력
+            const attackMap = { 1: 0, 2: 1, 3: 2, 4: 4 };
+            attack = attackMap[lineCount] || 0;
+        }
+        
+        // Back-to-Back 보너스
+        if (this.backToBack && attack > 0) {
+            attack += 1;
+        }
+        
+        // 콤보 보너스
+        if (this.combo >= 3) {
+            attack += Math.floor((this.combo - 2) / 2);
+        }
+        
+        return attack;
+    }
+    
+    // 아이템 드롭 확인
+    checkItemDrop(rarity) {
+        const dropRates = {
+            'common': 0.05,
+            'uncommon': 0.15,
+            'rare': 0.25,
+            'epic': 0.4
+        };
+        
+        if (Math.random() < dropRates[rarity]) {
+            const itemTypes = Object.keys(this.items);
+            const randomItem = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+            this.items[randomItem]++;
+            
+            console.log(`🎁 Item acquired: ${this.getItemEmoji(randomItem)}`);
+            this.app.audioManager?.playSound('itemGet');
+        }
+    }
+    
+    // 공격 전송 (멀티플레이어)
+    sendAttack(attackPower) {
+        if (this.shieldActive) {
+            console.log(`🛡️ Shield absorbed ${attackPower} attack`);
+            this.shieldActive = false;
+            return;
+        }
+        
+        // NetworkManager를 통해 다른 플레이어에게 공격 전송
+        this.app.networkManager?.sendGarbageAttack(attackPower);
+        console.log(`⚔️ Sent ${attackPower} garbage lines to opponents`);
+    }
+    
+    // 아이템 이모지 반환
+    getItemEmoji(itemType) {
+        const emojis = {
+            shield: '🛡️',
+            attack: '⚡',
+            lineClear: '💫',
+            slowDown: '🐌'
+        };
+        return emojis[itemType] || '🎁';
     }
     
     // 레벨업 처리
@@ -630,5 +859,158 @@ export class GameManager {
         if (gameState.opponents) {
             this.opponents = new Map(Object.entries(gameState.opponents));
         }
+    }
+    
+    // 아이템 사용
+    useItem(itemType) {
+        if (this.items[itemType] <= 0) {
+            console.log(`❌ No ${itemType} item available`);
+            return false;
+        }
+        
+        this.items[itemType]--;
+        
+        switch (itemType) {
+            case 'shield':
+                this.activateShield();
+                break;
+            case 'attack':
+                this.useAttackItem();
+                break;
+            case 'lineClear':
+                this.useLineClearItem();
+                break;
+            case 'slowDown':
+                this.useSlowDownItem();
+                break;
+        }
+        
+        this.updateUI();
+        this.app.audioManager?.playSound('itemUse');
+        return true;
+    }
+    
+    // 방어막 활성화
+    activateShield() {
+        this.shieldActive = true;
+        console.log('🛡️ Shield activated - next attack will be blocked');
+        
+        // 시각적 효과
+        document.body.classList.add('shield-active');
+        setTimeout(() => {
+            document.body.classList.remove('shield-active');
+        }, 5000);
+    }
+    
+    // 공격 아이템 사용
+    useAttackItem() {
+        if (this.gameMode === 'single') {
+            console.log('⚡ Attack item cannot be used in single mode');
+            return;
+        }
+        
+        const attackPower = 4; // 강력한 공격
+        this.app.networkManager?.sendGarbageAttack(attackPower);
+        console.log(`⚡ Used attack item - sent ${attackPower} garbage lines!`);
+    }
+    
+    // 라인 클리어 아이템 사용
+    useLineClearItem() {
+        // 가장 아래쪽 줄부터 최대 2줄 제거
+        let clearedLines = 0;
+        for (let row = this.board.height - 1; row >= 0 && clearedLines < 2; row--) {
+            let hasBlocks = false;
+            for (let col = 0; col < this.board.width; col++) {
+                if (this.board.grid[row][col] !== null) {
+                    hasBlocks = true;
+                    break;
+                }
+            }
+            
+            if (hasBlocks) {
+                // 줄 제거
+                this.board.grid.splice(row, 1);
+                this.board.grid.unshift(new Array(this.board.width).fill(null));
+                clearedLines++;
+            }
+        }
+        
+        if (clearedLines > 0) {
+            console.log(`💫 Line clear item removed ${clearedLines} lines`);
+            this.lines += clearedLines;
+            this.totalLines += clearedLines;
+            this.updateUI();
+        }
+    }
+    
+    // 속도 감소 아이템 사용
+    useSlowDownItem() {
+        if (this.gameMode === 'single') {
+            console.log('🐌 Slow down item cannot be used in single mode');
+            return;
+        }
+        
+        // 모든 상대방에게 속도 감소 효과 전송
+        this.app.networkManager?.sendSlowDownEffect(5000); // 5초간 속도 감소
+        console.log('🐌 Slow down item used - opponents slowed for 5 seconds');
+    }
+    
+    // 가비지 라인 받기 (공격당했을 때)
+    receiveGarbageAttack(attackPower) {
+        if (this.shieldActive) {
+            console.log('🛡️ Shield blocked the attack!');
+            this.shieldActive = false;
+            return;
+        }
+        
+        // 가비지 라인 생성
+        for (let i = 0; i < attackPower; i++) {
+            // 맨 위 줄이 비어있는지 확인
+            let topRowEmpty = true;
+            for (let col = 0; col < this.board.width; col++) {
+                if (this.board.grid[0][col] !== null) {
+                    topRowEmpty = false;
+                    break;
+                }
+            }
+            
+            if (!topRowEmpty) {
+                // 게임 오버
+                this.gameOver();
+                return;
+            }
+            
+            // 맨 위 줄 제거하고 가비지 라인 추가
+            this.board.grid.shift();
+            
+            // 가비지 라인 생성 (하나의 구멍이 있는 회색 블록들)
+            const garbageLine = new Array(this.board.width).fill({
+                color: '#666666',
+                type: 'garbage',
+                timestamp: Date.now()
+            });
+            
+            // 랜덤 위치에 구멍 생성
+            const holePosition = Math.floor(Math.random() * this.board.width);
+            garbageLine[holePosition] = null;
+            
+            this.board.grid.push(garbageLine);
+        }
+        
+        console.log(`💥 Received ${attackPower} garbage lines!`);
+        this.app.audioManager?.playSound('garbageReceived');
+    }
+    
+    // 속도 감소 효과 받기
+    receiveSlowDownEffect(duration) {
+        const originalInterval = this.dropInterval;
+        this.dropInterval *= 2; // 속도 절반으로 감소
+        
+        console.log(`🐌 Movement slowed for ${duration/1000} seconds`);
+        
+        setTimeout(() => {
+            this.dropInterval = originalInterval;
+            console.log('🏃 Speed returned to normal');
+        }, duration);
     }
 }
