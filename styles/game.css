@@ -1,3 +1,45 @@
+/* ===== Tetromino Block Styles (from tetromino-design) ===== */
+.block-3d {
+    position: relative;
+    background: linear-gradient(135deg, var(--block-color-light) 0%, var(--block-color) 100%);
+    box-shadow: 
+        inset 2px 2px 4px rgba(255, 255, 255, 0.4),
+        inset -2px -2px 4px rgba(0, 0, 0, 0.4),
+        0 0 8px rgba(0, 0, 0, 0.3);
+    border-radius: 2px;
+}
+
+.block-3d::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
+    border-radius: 2px 2px 0 0;
+}
+
+.block-3d::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.2), transparent);
+    border-radius: 0 0 2px 2px;
+}
+
+/* Tetromino Color Schemes */
+.tetro-i { --block-color: #06b6d4; --block-color-light: #67e8f9; } /* cyan */
+.tetro-o { --block-color: #eab308; --block-color-light: #fde047; } /* yellow */
+.tetro-t { --block-color: #a855f7; --block-color-light: #c084fc; } /* purple */
+.tetro-s { --block-color: #10b981; --block-color-light: #34d399; } /* green */
+.tetro-z { --block-color: #ef4444; --block-color-light: #f87171; } /* red */
+.tetro-j { --block-color: #3b82f6; --block-color-light: #60a5fa; } /* blue */
+.tetro-l { --block-color: #f97316; --block-color-light: #fb923c; } /* orange */
+
 /* ===== 게임 화면 레이아웃 ===== */
 .game-container {
     display: flex;

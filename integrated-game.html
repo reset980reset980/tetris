@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Tetris - Multi-Battle Edition</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/game.css">
+    <link rel="stylesheet" href="styles/ui.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4ecdc4;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            letter-spacing: 3px;
+        }
+
+        .game-wrapper {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .controls-info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            color: #fff;
+        }
+
+        .controls-info h3 {
+            color: #4ecdc4;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .key {
+            background: rgba(78, 205, 196, 0.2);
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            color: #4ecdc4;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .game-wrapper {
+                flex-direction: column;
+            }
+            
+            .game-container {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1>🎮 ENHANCED TETRIS BATTLE 🎮</h1>
+        
+        <div class="game-stats">
+            <div class="stat-item">
+                <div class="stat-label">High Score</div>
+                <div class="stat-value" id="highScore">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Games Played</div>
+                <div class="stat-value" id="gamesPlayed">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Total Lines</div>
+                <div class="stat-value" id="totalLines">0</div>
+            </div>
+        </div>
+
+        <div class="game-wrapper">
+            <!-- Left Panel: Game Info -->
+            <div class="game-info-panel">
+                <div class="score-section">
+                    <h3>Score</h3>
+                    <div class="score-value">0</div>
+                </div>
+                
+                <div class="level-section">
+                    <h3>Level</h3>
+                    <div class="level-value">1</div>
+                </div>
+                
+                <div class="lines-section">
+                    <h3>Lines</h3>
+                    <div class="lines-value">0</div>
+                </div>
+                
+                <div class="next-block-section">
+                    <h3>Next</h3>
+                    <canvas id="nextBlockCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Center: Main Game Board -->
+            <div class="game-board-container">
+                <canvas id="gameBoard"></canvas>
+                
+                <div class="game-over-overlay" style="display: none;">
+                    <div class="game-over-content">
+                        <h2>GAME OVER</h2>
+                        <p>Final Score: <span id="finalScore">0</span></p>
+                        <button id="restartBtn" class="btn btn-primary">Play Again</button>
+                        <button id="backToMenuBtn" class="btn btn-secondary">Main Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Multiplayer Boards -->
+            <div class="multiplayer-boards" id="multiplayerBoards" style="display: none;">
+                <div class="opponent-board">
+                    <h4>Player 2</h4>
+                    <canvas id="opponent-P2" width="150" height="300"></canvas>
+                </div>
+                <div class="opponent-board" style="display: none;">
+                    <h4>Player 3</h4>
+                    <canvas id="opponent-P3" width="150" height="300"></canvas>
+                </div>
+                <div class="opponent-board" style="display: none;">
+                    <h4>Player 4</h4>
+                    <canvas id="opponent-P4" width="150" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-info">
+            <h3>Controls</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <div class="control-item">
+                        <span>Move Left/Right</span>
+                        <span class="key">← →</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Soft Drop</span>
+                        <span class="key">↓</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Hard Drop</span>
+                        <span class="key">Space</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Rotate CW</span>
+                        <span class="key">↑ / X</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Rotate CCW</span>
+                        <span class="key">Z</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="control-item">
+                        <span>Hold Piece</span>
+                        <span class="key">C</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Pause</span>
+                        <span class="key">P</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Use Items</span>
+                        <span class="key">1-0</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Mute</span>
+                        <span class="key">M</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load integrated game with all features -->
+    <script type="module" src="js/integratedMain.js"></script>
+    
+    <script>
+        // Load stats from localStorage
+        function loadStats() {
+            const highScore = localStorage.getItem('tetrisHighScore') || 0;
+            const gamesPlayed = localStorage.getItem('tetrisGamesPlayed') || 0;
+            const totalLines = localStorage.getItem('tetrisTotalLines') || 0;
+            
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('gamesPlayed').textContent = gamesPlayed;
+            document.getElementById('totalLines').textContent = totalLines;
+        }
+        
+        // Save stats
+        function saveStats(score, lines) {
+            const currentHighScore = parseInt(localStorage.getItem('tetrisHighScore') || 0);
+            const currentGamesPlayed = parseInt(localStorage.getItem('tetrisGamesPlayed') || 0);
+            const currentTotalLines = parseInt(localStorage.getItem('tetrisTotalLines') || 0);
+            
+            if (score > currentHighScore) {
+                localStorage.setItem('tetrisHighScore', score);
+            }
+            
+            localStorage.setItem('tetrisGamesPlayed', currentGamesPlayed + 1);
+            localStorage.setItem('tetrisTotalLines', currentTotalLines + lines);
+            
+            loadStats();
+        }
+        
+        // Initialize stats on load
+        loadStats();
+        
+        // Handle restart button
+        document.getElementById('restartBtn')?.addEventListener('click', () => {
+            if (window.tetrisGame) {
+                window.tetrisGame.restartGame();
+            }
+        });
+        
+        // Handle back to menu button
+        document.getElementById('backToMenuBtn')?.addEventListener('click', () => {
+            location.reload();
+        });
+        
+        // Mute toggle
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'm') {
+                if (window.tetrisGame && window.tetrisGame.sound) {
+                    window.tetrisGame.sound.toggle();
+                }
+            }
+        });
+        
+        // Update stats when game ends
+        window.addEventListener('gameOver', (event) => {
+            if (event.detail) {
+                saveStats(event.detail.score, event.detail.lines);
+            }
+        });
+    </script>
+</body>
+</html>
