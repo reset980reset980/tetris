@@ -64,19 +64,15 @@ class IntegratedTetrisGame {
     }
     
     async init() {
-        // Setup UI
+        // Setup UI first (shows mode selector)
         this.setupUI();
-        
-        // Initialize network for multiplayer
-        if (this.gameMode !== 'single') {
-            await this.initMultiplayer();
-        }
         
         // Setup controls
         this.setupControls();
         
-        // Start game
-        this.startGame();
+        // Don't start game automatically - wait for mode selection
+        // Game will start when user selects a mode in setGameMode()
+        console.log('Game initialized. Please select a game mode.');
     }
     
     setupUI() {
@@ -92,10 +88,9 @@ class IntegratedTetrisGame {
             </div>
         `;
         
-        // Insert before game container
-        const gameContainer = document.querySelector('.game-container');
-        if (gameContainer && !document.querySelector('.game-mode-selector')) {
-            gameContainer.parentNode.insertBefore(modeSelector, gameContainer);
+        // Insert into body, positioned over everything
+        if (!document.querySelector('.game-mode-selector')) {
+            document.body.appendChild(modeSelector);
         }
         
         // Mode button handlers
@@ -128,7 +123,7 @@ class IntegratedTetrisGame {
             this.sound.playMusic('battle');
         }
         
-        this.restartGame();
+        this.startNewGame();
     }
     
     async initMultiplayer() {
@@ -231,7 +226,7 @@ class IntegratedTetrisGame {
         return Array(this.rows).fill().map(() => Array(this.cols).fill(0));
     }
     
-    startGame() {
+    startNewGame() {
         this.gameOver = false;
         this.paused = false;
         this.score = 0;
@@ -249,11 +244,36 @@ class IntegratedTetrisGame {
         // Start game loop
         this.startGameLoop();
         
-        // Play music
-        this.sound.playMusic('main');
+        // Play music based on mode
+        if (this.gameMode === 'battle' || this.gameMode === 'multi') {
+            this.sound.playMusic('battle');
+        } else {
+            this.sound.playMusic('main');
+        }
+        
+        // Show multiplayer boards if needed
+        if (this.gameMode !== 'single') {
+            const multiplayerBoards = document.getElementById('multiplayerBoards');
+            if (multiplayerBoards) {
+                multiplayerBoards.style.display = 'block';
+                
+                // Show appropriate number of opponent boards
+                const opponentBoards = multiplayerBoards.querySelectorAll('.opponent-board');
+                const maxPlayers = this.gameMode === 'battle' ? 1 : 3;
+                
+                opponentBoards.forEach((board, index) => {
+                    board.style.display = index < maxPlayers ? 'block' : 'none';
+                });
+            }
+        }
         
         // Show game started notification
-        this.showNotification('Game Started!');
+        this.showNotification(`${this.gameMode.toUpperCase()} Mode Started!`);
+    }
+    
+    startGame() {
+        // Alias for compatibility
+        this.startNewGame();
     }
     
     startGameLoop() {
