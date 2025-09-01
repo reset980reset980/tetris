@@ -253,22 +253,153 @@ class IntegratedTetrisGame {
         
         // Show multiplayer boards if needed
         if (this.gameMode !== 'single') {
-            const multiplayerBoards = document.getElementById('multiplayerBoards');
-            if (multiplayerBoards) {
-                multiplayerBoards.style.display = 'block';
+            if (this.gameMode === 'battle') {
+                // 1vs1 battle mode - show right panel
+                const multiplayerBoards = document.getElementById('multiplayerBoards');
+                const fourPlayerBoards = document.getElementById('fourPlayerBoards');
                 
-                // Show appropriate number of opponent boards
-                const opponentBoards = multiplayerBoards.querySelectorAll('.opponent-board');
-                const maxPlayers = this.gameMode === 'battle' ? 1 : 3;
+                if (multiplayerBoards) multiplayerBoards.style.display = 'block';
+                if (fourPlayerBoards) fourPlayerBoards.style.display = 'none';
                 
-                opponentBoards.forEach((board, index) => {
-                    board.style.display = index < maxPlayers ? 'block' : 'none';
-                });
+            } else if (this.gameMode === 'multi') {
+                // 4 player mode - show bottom layout
+                const multiplayerBoards = document.getElementById('multiplayerBoards');
+                const fourPlayerBoards = document.getElementById('fourPlayerBoards');
+                
+                if (multiplayerBoards) multiplayerBoards.style.display = 'none';
+                if (fourPlayerBoards) {
+                    fourPlayerBoards.style.display = 'grid';
+                    // Update opponent displays for 4 player mode
+                    this.setupFourPlayerDisplay();
+                }
             }
+        } else {
+            // Single player - hide all multiplayer boards
+            const multiplayerBoards = document.getElementById('multiplayerBoards');
+            const fourPlayerBoards = document.getElementById('fourPlayerBoards');
+            
+            if (multiplayerBoards) multiplayerBoards.style.display = 'none';
+            if (fourPlayerBoards) fourPlayerBoards.style.display = 'none';
         }
         
         // Show game started notification
         this.showNotification(`${this.gameMode.toUpperCase()} Mode Started!`);
+    }
+    
+    setupFourPlayerDisplay() {
+        // Initialize AI opponents for 4-player mode
+        const canvases = [
+            'opponent-AI1',
+            'opponent-AI2', 
+            'opponent-AI3'
+        ];
+        
+        canvases.forEach((canvasId, index) => {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                // Draw empty board initially
+                this.drawEmptyBoard(ctx, canvas.width, canvas.height);
+            }
+        });
+        
+        // Show room info for multiplayer
+        this.showRoomInfo();
+    }
+    
+    showRoomInfo() {
+        const notification = document.createElement('div');
+        notification.className = 'room-info';
+        notification.innerHTML = `
+            <div class="room-info-content">
+                <h3>🎮 Multiplayer Room</h3>
+                <p><strong>Room Code:</strong> <span id="roomCode">${this.generateRoomCode()}</span></p>
+                <p><strong>Players:</strong> <span id="playerCount">1/4</span></p>
+                <div class="room-controls">
+                    <button id="copyRoomCode" class="btn btn-small">Copy Code</button>
+                    <button id="joinRoomBtn" class="btn btn-small">Join Room</button>
+                    <input type="text" id="joinRoomInput" placeholder="Enter room code..." style="display: none;">
+                </div>
+                <p class="room-note">📝 현재는 AI와 대전 (실제 서버 구현 예정)</p>
+                <button id="closeRoomInfo" class="btn btn-secondary">Close</button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Add event listeners
+        document.getElementById('copyRoomCode')?.addEventListener('click', () => {
+            const roomCode = document.getElementById('roomCode').textContent;
+            navigator.clipboard.writeText(roomCode).then(() => {
+                this.showNotification('Room code copied!');
+            });
+        });
+        
+        document.getElementById('joinRoomBtn')?.addEventListener('click', () => {
+            const input = document.getElementById('joinRoomInput');
+            input.style.display = input.style.display === 'none' ? 'block' : 'none';
+            if (input.style.display === 'block') {
+                input.focus();
+            }
+        });
+        
+        document.getElementById('joinRoomInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const roomCode = e.target.value.trim();
+                if (roomCode) {
+                    this.joinRoom(roomCode);
+                    notification.remove();
+                }
+            }
+        });
+        
+        document.getElementById('closeRoomInfo')?.addEventListener('click', () => {
+            notification.remove();
+        });
+        
+        // Auto-close after 10 seconds
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                notification.remove();
+            }
+        }, 10000);
+    }
+    
+    generateRoomCode() {
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+    
+    joinRoom(roomCode) {
+        this.showNotification(`Joining room: ${roomCode} (현재 AI 시뮬레이션)`);
+        // In real implementation, this would connect to actual room
+    }
+    
+    drawEmptyBoard(ctx, width, height) {
+        // Clear canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw grid
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        
+        const blockSize = width / 10;
+        
+        // Vertical lines
+        for (let x = 0; x <= 10; x++) {
+            ctx.beginPath();
+            ctx.moveTo(x * blockSize, 0);
+            ctx.lineTo(x * blockSize, height);
+            ctx.stroke();
+        }
+        
+        // Horizontal lines
+        for (let y = 0; y <= 20; y++) {
+            ctx.beginPath();
+            ctx.moveTo(0, y * blockSize);
+            ctx.lineTo(width, y * blockSize);
+            ctx.stroke();
+        }
     }
     
     startGame() {

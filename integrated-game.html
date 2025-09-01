@@ -36,15 +36,140 @@
         }
 
         .game-wrapper {
-            display: flex;
-            gap: 2rem;
+            display: grid;
+            grid-template-columns: 200px 1fr 200px;
+            grid-template-rows: auto auto;
+            gap: 1rem;
             justify-content: center;
             align-items: flex-start;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .game-container {
             display: flex;
             gap: 2rem;
+            grid-column: 1 / -1;
+            justify-content: center;
+        }
+
+        .game-info-panel {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .game-board-container {
+            grid-column: 2;
+            grid-row: 1;
+            justify-self: center;
+        }
+
+        .multiplayer-boards {
+            grid-column: 3;
+            grid-row: 1;
+        }
+
+        .multiplayer-boards.four-player {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            justify-content: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .multiplayer-boards.four-player .opponent-board {
+            display: block !important;
+        }
+
+        /* Room Info Styles */
+        .room-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #4ecdc4;
+            border-radius: 15px;
+            padding: 2rem;
+            z-index: 1001;
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.5);
+        }
+
+        .room-info-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .room-info-content h3 {
+            color: #4ecdc4;
+            margin-bottom: 1rem;
+        }
+
+        .room-info-content p {
+            margin: 0.5rem 0;
+        }
+
+        .room-controls {
+            margin: 1rem 0;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: #4ecdc4;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #45b7aa;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #joinRoomInput {
+            padding: 0.5rem;
+            border: 1px solid #4ecdc4;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            text-align: center;
+            width: 150px;
+            margin: 0.5rem;
+        }
+
+        .room-note {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 1rem;
         }
 
         .controls-info {
@@ -173,19 +298,33 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Multiplayer Boards -->
+            <!-- Right Panel: Multiplayer Boards (1vs1 or 2 players) -->
             <div class="multiplayer-boards" id="multiplayerBoards" style="display: none;">
                 <div class="opponent-board">
                     <h4>Player 2</h4>
-                    <canvas id="opponent-P2" width="150" height="300"></canvas>
+                    <canvas id="opponent-P2" width="120" height="240"></canvas>
                 </div>
-                <div class="opponent-board" style="display: none;">
+            </div>
+
+            <!-- 4 Player Layout - Bottom Row -->
+            <div class="multiplayer-boards four-player" id="fourPlayerBoards" style="display: none;">
+                <div class="opponent-board">
+                    <h4>Player 2</h4>
+                    <canvas id="opponent-AI1" width="150" height="300"></canvas>
+                </div>
+                <div class="opponent-board">
                     <h4>Player 3</h4>
-                    <canvas id="opponent-P3" width="150" height="300"></canvas>
+                    <canvas id="opponent-AI2" width="150" height="300"></canvas>
                 </div>
-                <div class="opponent-board" style="display: none;">
+                <div class="opponent-board">
                     <h4>Player 4</h4>
-                    <canvas id="opponent-P4" width="150" height="300"></canvas>
+                    <canvas id="opponent-AI3" width="150" height="300"></canvas>
+                </div>
+                <div class="opponent-board">
+                    <h4>Your Rank</h4>
+                    <div style="text-align: center; color: #4ecdc4; font-size: 2rem; padding: 20px;">
+                        #1
+                    </div>
                 </div>
             </div>
         </div>
