@@ -127,6 +127,11 @@ export class Game extends EventEmitter {
         
         this.gameLoop();
         
+        // Start background music
+        if (this.soundManager) {
+            this.soundManager.playBackgroundMusic();
+        }
+        
         console.log('Game started');
         this.emit('gameStart');
     }
@@ -153,6 +158,11 @@ export class Game extends EventEmitter {
     stop() {
         this.isRunning = false;
         this.isPaused = false;
+        
+        // Stop background music
+        if (this.soundManager) {
+            this.soundManager.stopBackgroundMusic();
+        }
         
         console.log('Game stopped');
         this.emit('gameStop');
@@ -199,9 +209,9 @@ export class Game extends EventEmitter {
         // Handle continuous key presses with timing control
         const currentTime = performance.now();
         
-        // Soft drop handling with controlled timing
+        // Soft drop handling with controlled timing  
         if (this.keys['ArrowDown']) {
-            if (!this.lastSoftDrop || (currentTime - this.lastSoftDrop) > 50) { // 50ms interval for soft drop
+            if (!this.lastSoftDrop || (currentTime - this.lastSoftDrop) > 100) { // 100ms interval for soft drop
                 if (this.movePieceDown(true)) {
                     this.soundManager?.play('move');
                     this.lastSoftDrop = currentTime;
@@ -542,8 +552,11 @@ export class Game extends EventEmitter {
         this.isGameOver = true;
         this.isRunning = false;
         
-        // Play game over sound
-        this.soundManager?.play('gameOver');
+        // Stop background music and play game over sound
+        if (this.soundManager) {
+            this.soundManager.stopBackgroundMusic();
+            this.soundManager.play('gameOver');
+        }
         
         const gameOverData = {
             score: this.score,
