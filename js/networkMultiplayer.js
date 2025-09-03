@@ -9,7 +9,7 @@ export class NetworkMultiplayer {
         this.players = new Map();
         this.isHost = false;
         this.gameState = 'waiting';
-        this.serverUrl = 'ws://localhost:8080';
+        this.serverUrl = `ws://${window.location.hostname}:9001`;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         

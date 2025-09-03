@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Tetris - Clean Layout</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/game.css">
+    <link rel="stylesheet" href="styles/ui.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4ecdc4;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+        }
+
+        /* 게임 모드 선택 */
+        .mode-selector {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .mode-selector.hidden {
+            display: none;
+        }
+
+        .mode-btn {
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            margin: 0 10px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(78, 205, 196, 0.3);
+        }
+
+        /* 메인 게임 영역 */
+        .game-area {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* 왼쪽 패널 - 게임 정보 */
+        .left-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 250px;
+            max-width: 280px;
+        }
+
+        /* 중앙 게임 보드 */
+        .game-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .game-board-container {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #4ecdc4;
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.3);
+        }
+
+        #gameBoard {
+            border: 2px solid #333;
+            background: #000;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* 오른쪽 패널 - 아이템 */
+        .right-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 250px;
+            max-width: 280px;
+        }
+
+        /* 아이템 패널 스타일 */
+        .battle-items {
+            margin-bottom: 20px;
+        }
+
+        .battle-items h4 {
+            color: #4ecdc4;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .item-slot {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .item-slot:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .item-slot.available {
+            border-color: #4ecdc4;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+        }
+
+        .item-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .item-count {
+            font-size: 12px;
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .item-key {
+            font-size: 10px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        /* 게임 정보 스타일 */
+        .info-section {
+            margin-bottom: 20px;
+        }
+
+        .info-section h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .stat-value {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        /* Next 블록 영역 */
+        .next-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .next-container h4 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+
+        #nextPiece {
+            border: 1px solid #333;
+            background: #000;
+            margin: 0 auto;
+        }
+
+        /* 게임 오버 화면 */
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .game-over.show {
+            display: flex;
+        }
+
+        .game-over-content {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #4ecdc4;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .game-over-content h2 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .final-score {
+            font-size: 1.5rem;
+            margin: 20px 0;
+        }
+
+        .game-over-btn {
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .game-over-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        /* 룸 정보 */
+        .room-info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #4ecdc4;
+            border-radius: 15px;
+            padding: 2rem;
+            z-index: 1001;
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.5);
+            display: none;
+        }
+
+        .room-info.show {
+            display: block;
+        }
+
+        .room-info-content {
+            text-align: center;
+            color: #fff;
+        }
+
+        .room-info-content h3 {
+            color: #4ecdc4;
+            margin-bottom: 1rem;
+        }
+
+        .room-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            background: rgba(78, 205, 196, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        /* 멀티플레이어 보드 */
+        .multiplayer-boards {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .multiplayer-boards.show {
+            display: block;
+        }
+
+        .opponent-board {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .opponent-board h4 {
+            color: #4ecdc4;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .opponent-canvas {
+            border: 1px solid #333;
+            background: #000;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .left-panel, .right-panel {
+                max-width: 100%;
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .mode-btn {
+                display: block;
+                margin: 10px auto;
+                width: 200px;
+            }
+            
+            .game-area {
+                gap: 15px;
+            }
+            
+            .item-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+        }
+
+        /* 숨김 클래스 */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 ENHANCED TETRIS BATTLE 🎮</h1>
+        
+        <!-- 게임 모드 선택 -->
+        <div class="mode-selector game-mode-selector">
+            <button id="singleMode" class="mode-btn">Single Player</button>
+            <button id="battleMode" class="mode-btn">1vs1 Battle</button>
+            <button id="multiMode" class="mode-btn">4P Multi Battle</button>
+        </div>
+
+        <!-- 메인 게임 영역 -->
+        <div class="game-area">
+            <!-- 왼쪽 패널 - 게임 정보 -->
+            <div class="left-panel game-info-panel">
+                <div class="info-section">
+                    <h3>Game Stats</h3>
+                    <div class="stat-item">
+                        <span>High Score</span>
+                        <span class="stat-value" id="highScore">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Games Played</span>
+                        <span class="stat-value" id="gamesPlayed">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Total Lines</span>
+                        <span class="stat-value" id="totalLines">0</span>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3>Current Game</h3>
+                    <div class="stat-item">
+                        <span>Score</span>
+                        <span class="stat-value" id="score">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Level</span>
+                        <span class="stat-value" id="level">1</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Lines</span>
+                        <span class="stat-value" id="lines">0</span>
+                    </div>
+                </div>
+
+                <div class="next-container">
+                    <h4>Next</h4>
+                    <canvas id="nextPiece" width="80" height="80"></canvas>
+                </div>
+            </div>
+
+            <!-- 중앙 게임 보드 -->
+            <div class="game-center">
+                <div class="game-board-container">
+                    <canvas id="gameBoard" width="300" height="600"></canvas>
+                </div>
+            </div>
+
+            <!-- 오른쪽 패널 - 아이템 -->
+            <div class="right-panel">
+                <div class="battle-items">
+                    <h4>Battle Items</h4>
+                    <div class="item-grid">
+                        <div class="item-slot" data-item="shield">
+                            <div class="item-icon">🛡️</div>
+                            <div class="item-count" id="item-shield">0</div>
+                            <div class="item-key">[1]</div>
+                        </div>
+                        <div class="item-slot" data-item="attack">
+                            <div class="item-icon">⚔️</div>
+                            <div class="item-count" id="item-attack">0</div>
+                            <div class="item-key">[2]</div>
+                        </div>
+                        <div class="item-slot" data-item="lineClear">
+                            <div class="item-icon">💥</div>
+                            <div class="item-count" id="item-lineClear">0</div>
+                            <div class="item-key">[3]</div>
+                        </div>
+                        <div class="item-slot" data-item="slowDown">
+                            <div class="item-icon">🐢</div>
+                            <div class="item-count" id="item-slowDown">0</div>
+                            <div class="item-key">[4]</div>
+                        </div>
+                        <div class="item-slot" data-item="speedUp">
+                            <div class="item-icon">⚡</div>
+                            <div class="item-count" id="item-speedUp">0</div>
+                            <div class="item-key">[5]</div>
+                        </div>
+                        <div class="item-slot" data-item="bomb">
+                            <div class="item-icon">💣</div>
+                            <div class="item-count" id="item-bomb">0</div>
+                            <div class="item-key">[6]</div>
+                        </div>
+                        <div class="item-slot" data-item="freeze">
+                            <div class="item-icon">❄️</div>
+                            <div class="item-count" id="item-freeze">0</div>
+                            <div class="item-key">[7]</div>
+                        </div>
+                        <div class="item-slot" data-item="gravity">
+                            <div class="item-icon">⬇️</div>
+                            <div class="item-count" id="item-gravity">0</div>
+                            <div class="item-key">[8]</div>
+                        </div>
+                        <div class="item-slot" data-item="shuffle">
+                            <div class="item-icon">🔀</div>
+                            <div class="item-count" id="item-shuffle">0</div>
+                            <div class="item-key">[9]</div>
+                        </div>
+                        <div class="item-slot" data-item="invisible">
+                            <div class="item-icon">👻</div>
+                            <div class="item-count" id="item-invisible">0</div>
+                            <div class="item-key">[0]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3>Active Effects</h3>
+                    <div id="activeEffects" style="color: #4ecdc4; font-size: 12px; text-align: center;">
+                        None
+                    </div>
+                </div>
+
+                <!-- 멀티플레이어 보드 -->
+                <div class="multiplayer-boards" id="multiplayerBoards">
+                    <div class="opponent-board">
+                        <h4 id="player2Name">Player 2</h4>
+                        <canvas class="opponent-canvas" id="player2Board" width="120" height="240"></canvas>
+                    </div>
+                    <div class="opponent-board">
+                        <h4 id="player3Name">Player 3</h4>
+                        <canvas class="opponent-canvas" id="player3Board" width="120" height="240"></canvas>
+                    </div>
+                    <div class="opponent-board">
+                        <h4 id="player4Name">Player 4</h4>
+                        <canvas class="opponent-canvas" id="player4Board" width="120" height="240"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 게임 오버 화면 -->
+    <div class="game-over" id="gameOver">
+        <div class="game-over-content">
+            <h2>GAME OVER</h2>
+            <div class="final-score">
+                Final Score: <span id="finalScore">0</span>
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="game-over-btn" id="playAgain">Play Again</button>
+                <button class="game-over-btn" id="mainMenu">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 룸 정보 -->
+    <div class="room-info" id="roomInfo">
+        <div class="room-info-content">
+            <h3>Multiplayer Room Created</h3>
+            <p>Room Code:</p>
+            <div class="room-code" id="roomCode">ROOM123</div>
+            <p>Share this code with friends to join!</p>
+            <button class="game-over-btn" id="closeRoomInfo">Start Game</button>
+        </div>
+    </div>
+
+    <!-- 게임 스크립트 로드 -->
+    <script type="module" src="js/integratedMain.js"></script>
+</body>
+</html>

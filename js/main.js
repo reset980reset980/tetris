@@ -1,357 +1,604 @@
-// ===== 메인 애플리케이션 진입점 =====
-import { GameManager } from './game/GameManager.js';
-import { UIManager } from './ui/UIManager.js';
-import { AudioManager } from './audio/AudioManager.js';
-import { NetworkManager } from './network/NetworkManager.js';
-import { SettingsManager } from './managers/SettingsManager.js';
+import { Game } from './core/game.js';
+import { MenuManager } from './ui/menuManager.js';
+import { NetworkManager } from './network/networkManager.js';
+import { SoundManager } from './audio/soundManager.js';
 
 class TetrisApp {
     constructor() {
-        this.gameManager = null;
-        this.uiManager = null;
-        this.audioManager = null;
-        this.networkManager = null;
-        this.settingsManager = null;
+        this.game = null;
+        this.menuManager = new MenuManager();
+        this.networkManager = new NetworkManager();
+        this.soundManager = new SoundManager();
         
-        this.currentScreen = 'mainMenu';
-        this.gameMode = 'single'; // single, oneVsOne, multiBattle
+        this.currentMode = null;
+        this.isGameActive = false;
         
         this.init();
     }
     
-    async init() {
-        try {
-            // 매니저들 초기화
-            this.settingsManager = new SettingsManager();
-            await this.settingsManager.loadSettings();
-            
-            this.audioManager = new AudioManager(this.settingsManager);
-            await this.audioManager.init();
-            
-            this.uiManager = new UIManager(this);
-            this.networkManager = new NetworkManager(this);
-            this.gameManager = new GameManager(this);
-            
-            // 이벤트 리스너 설정
-            this.setupEventListeners();
-            
-            // 초기 화면 표시
-            this.showScreen('mainMenu');
-            
-            console.log('✅ Tetris App initialized successfully');
-            
-        } catch (error) {
-            console.error('❌ Failed to initialize Tetris App:', error);
-            this.showErrorMessage('게임 초기화에 실패했습니다.');
-        }
+    init() {
+        this.setupEventListeners();
+        this.showMainMenu();
+        
+        // Initialize network status
+        this.updateNetworkStatus(false, 'Offline');
+        
+        console.log('Tetris Battle initialized');
     }
     
     setupEventListeners() {
-        // 메인 메뉴 버튼들
-        document.getElementById('singleModeBtn').addEventListener('click', () => {
-            this.startGame('single');
+        // Menu button handlers
+        document.getElementById('singlePlayerBtn').addEventListener('click', () => {
+            this.startSinglePlayer();
         });
         
-        document.getElementById('oneVsOneBtn').addEventListener('click', () => {
-            this.showScreen('lobby');
-            this.gameMode = 'oneVsOne';
+        document.getElementById('battleModeBtn').addEventListener('click', () => {
+            this.showRoomMenu();
         });
         
-        document.getElementById('multiBattleBtn').addEventListener('click', () => {
-            this.showScreen('lobby');
-            this.gameMode = 'multiBattle';
+        document.getElementById('multiModeBtn').addEventListener('click', () => {
+            this.showRoomMenu();
         });
         
         document.getElementById('settingsBtn').addEventListener('click', () => {
-            this.showScreen('settings');
+            this.showSettings();
         });
         
-        document.getElementById('exitBtn').addEventListener('click', () => {
-            this.confirmExit();
-        });
-        
-        // 게임 화면 버튼들
+        // Game control handlers
         document.getElementById('restartBtn').addEventListener('click', () => {
             this.restartGame();
         });
         
-        document.getElementById('backToMenuBtn').addEventListener('click', () => {
-            this.showScreen('mainMenu');
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            this.showMainMenu();
         });
         
-        // 로비 화면 관련
-        document.getElementById('backToMainBtn').addEventListener('click', () => {
-            this.showScreen('mainMenu');
-        });
+        // Room menu event listeners
+        this.setupRoomEventListeners();
         
-        // 설정 화면 관련
-        document.getElementById('settingsBackBtn').addEventListener('click', () => {
-            this.showScreen('mainMenu');
-        });
-        
-        // 키보드 입력 처리
+        // Global key handlers
         document.addEventListener('keydown', (e) => {
-            this.handleKeyDown(e);
+            this.handleKeyPress(e);
         });
         
-        document.addEventListener('keyup', (e) => {
-            this.handleKeyUp(e);
+        // Network event handlers
+        this.networkManager.on('connected', () => {
+            this.updateNetworkStatus(true, 'Connected');
         });
         
-        // 창 크기 변경 처리
-        window.addEventListener('resize', () => {
-            if (this.gameManager && this.gameManager.isPlaying) {
-                this.gameManager.handleResize();
-            }
+        this.networkManager.on('disconnected', () => {
+            this.updateNetworkStatus(false, 'Disconnected');
         });
         
-        // 페이지 언로드 시 정리
-        window.addEventListener('beforeunload', () => {
-            this.cleanup();
+        this.networkManager.on('roomCreated', (roomData) => {
+            console.log('Room created:', roomData);
+        });
+        
+        this.networkManager.on('gameStart', (gameData) => {
+            console.log('Game start event received:', gameData);
+            this.startNetworkGame(gameData);
+        });
+        
+        this.networkManager.on('roomCreated', (data) => {
+            this.handleRoomCreated(data);
+        });
+        
+        this.networkManager.on('roomJoined', (data) => {
+            this.handleRoomJoined(data);
+        });
+        
+        this.networkManager.on('playerJoined', (data) => {
+            this.handlePlayerJoined(data);
+        });
+        
+        this.networkManager.on('matchFound', (data) => {
+            this.handleRoomJoined(data);
+        });
+        
+        this.networkManager.on('error', (error) => {
+            console.error('Network error:', error);
+            alert('Network error: ' + (error.message || error));
         });
     }
     
-    showScreen(screenName) {
-        // 모든 화면 숨기기
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
+    setupRoomEventListeners() {
+        // Back to main menu
+        document.getElementById('backToMainBtn').addEventListener('click', () => {
+            this.showMainMenu();
         });
         
-        // 선택된 화면 보이기
-        const targetScreen = document.getElementById(screenName + 'Screen') || 
-                           document.getElementById(screenName);
+        // Create room
+        document.getElementById('createRoomBtn').addEventListener('click', () => {
+            this.createRoom();
+        });
         
-        if (targetScreen) {
-            targetScreen.classList.add('active');
-            this.currentScreen = screenName;
-            
-            // 화면 전환 시 오디오 조정
-            this.audioManager.onScreenChange(screenName);
-        }
+        // Join room
+        document.getElementById('joinRoomBtn').addEventListener('click', () => {
+            this.joinRoom();
+        });
+        
+        // Quick match
+        document.getElementById('quickMatchBtn').addEventListener('click', () => {
+            this.quickMatch();
+        });
+        
+        // Leave room
+        document.getElementById('leaveRoomBtn').addEventListener('click', () => {
+            this.leaveRoom();
+        });
+        
+        // Start game (host only)
+        document.getElementById('startGameBtn').addEventListener('click', () => {
+            this.startMultiplayerGame();
+        });
     }
     
-    async startGame(mode) {
+    showMainMenu() {
+        this.menuManager.showMenu('main');
+        this.stopGame();
+        this.currentMode = null;
+        this.isGameActive = false;
+        
+        // Hide game panels
+        this.hideGamePanels();
+    }
+    
+    startSinglePlayer() {
+        console.log('Starting single player mode');
+        this.currentMode = 'single';
+        this.menuManager.hideMenu('main');
+        this.showGameContainer();
+        
+        // Hide multiplayer elements
+        this.hideMultiplayerElements();
+        
+        this.game = new Game({
+            canvas: document.getElementById('gameCanvas'),
+            nextCanvas: document.getElementById('nextCanvas'),
+            holdCanvas: document.getElementById('holdCanvas'),
+            mode: 'single',
+            soundManager: this.soundManager
+        });
+        
+        this.game.on('scoreUpdate', (data) => {
+            this.updateUI(data);
+        });
+        
+        this.game.on('gameOver', (data) => {
+            this.handleGameOver(data);
+        });
+        
+        this.game.start();
+        this.isGameActive = true;
+    }
+    
+    async startBattleMode() {
+        console.log('Starting 1v1 battle mode');
+        this.currentMode = 'battle';
+        
         try {
-            this.gameMode = mode;
-            this.showScreen('game');
+            await this.networkManager.connect();
+            const room = await this.networkManager.createRoom('1v1 Battle', 2);
             
-            // 게임 시작
-            await this.gameManager.startGame(mode);
+            this.menuManager.hideMenu('main');
+            this.showGameContainer();
             
-            // 배경음악 시작
-            this.audioManager.playBackgroundMusic('game');
+            // Show battle elements
+            this.showBattleElements();
+            
+            console.log('Waiting for opponent...');
+            this.updateNetworkStatus(true, 'Waiting for opponent...');
             
         } catch (error) {
-            console.error('❌ Failed to start game:', error);
-            this.showErrorMessage('게임 시작에 실패했습니다.');
-            this.showScreen('mainMenu');
+            console.error('Failed to start battle mode:', error);
+            alert('Failed to connect to server. Starting offline mode.');
+            this.startSinglePlayer();
         }
     }
     
-    async restartGame() {
-        if (this.gameManager) {
-            await this.gameManager.restartGame();
+    async startMultiMode() {
+        console.log('Starting 4-player battle mode');
+        this.currentMode = 'multi';
+        
+        try {
+            await this.networkManager.connect();
+            const room = await this.networkManager.createRoom('4P Battle', 4);
+            
+            this.menuManager.hideMenu('main');
+            this.showGameContainer();
+            
+            // Show multi elements
+            this.showMultiElements();
+            
+            console.log('Waiting for players...');
+            this.updateNetworkStatus(true, 'Waiting for players...');
+            
+        } catch (error) {
+            console.error('Failed to start multi mode:', error);
+            alert('Failed to connect to server. Starting offline mode.');
+            this.startSinglePlayer();
         }
+    }
+    
+    startNetworkGame(gameData) {
+        console.log('Starting network game:', gameData);
+        
+        // Hide menus and show game
+        this.menuManager.hideAllMenus();
+        this.menuManager.showGameContainer();
+        
+        // Set current mode based on player count
+        const playerCount = gameData?.players?.length || 2;
+        this.currentMode = playerCount > 2 ? 'multi' : 'battle';
+        
+        // Show appropriate multiplayer elements
+        if (this.currentMode === 'multi') {
+            this.showMultiElements();
+        } else {
+            this.showBattleElements();
+        }
+        
+        this.game = new Game({
+            canvas: document.getElementById('gameCanvas'),
+            nextCanvas: document.getElementById('nextCanvas'),
+            holdCanvas: document.getElementById('holdCanvas'),
+            mode: this.currentMode,
+            networkManager: this.networkManager,
+            gameData: gameData,
+            soundManager: this.soundManager
+        });
+        
+        this.game.on('scoreUpdate', (data) => {
+            this.updateUI(data);
+        });
+        
+        this.game.on('gameOver', (data) => {
+            this.handleGameOver(data);
+        });
+        
+        this.game.on('attack', (attackData) => {
+            this.networkManager.sendAttack(attackData);
+        });
+        
+        this.game.start();
+        this.isGameActive = true;
+        
+        this.updateNetworkStatus(true, 'Game in progress');
+    }
+    
+    showGameContainer() {
+        document.getElementById('gameContainer').classList.add('active');
+    }
+    
+    hideGameContainer() {
+        document.getElementById('gameContainer').classList.remove('active');
+    }
+    
+    hideGamePanels() {
+        this.hideGameContainer();
+    }
+    
+    hideMultiplayerElements() {
+        document.getElementById('battleItems').style.display = 'none';
+        document.getElementById('opponentBoards').style.display = 'none';
+    }
+    
+    showBattleElements() {
+        document.getElementById('battleItems').style.display = 'block';
+        document.getElementById('opponentBoards').style.display = 'block';
+        
+        // Create opponent board for 1v1
+        const opponentsGrid = document.getElementById('opponentsGrid');
+        opponentsGrid.innerHTML = `
+            <div class="opponent-board">
+                <h4>Opponent</h4>
+                <canvas id="opponentCanvas1" width="120" height="240"></canvas>
+            </div>
+        `;
+    }
+    
+    showMultiElements() {
+        document.getElementById('battleItems').style.display = 'block';
+        document.getElementById('opponentBoards').style.display = 'block';
+        
+        // Create opponent boards for 4-player
+        const opponentsGrid = document.getElementById('opponentsGrid');
+        opponentsGrid.innerHTML = `
+            <div class="opponent-board">
+                <h4>Player 2</h4>
+                <canvas id="opponentCanvas1" width="100" height="200"></canvas>
+            </div>
+            <div class="opponent-board">
+                <h4>Player 3</h4>
+                <canvas id="opponentCanvas2" width="100" height="200"></canvas>
+            </div>
+            <div class="opponent-board">
+                <h4>Player 4</h4>
+                <canvas id="opponentCanvas3" width="100" height="200"></canvas>
+            </div>
+        `;
+    }
+    
+    updateUI(data) {
+        document.getElementById('score').textContent = data.score || 0;
+        document.getElementById('level').textContent = data.level || 1;
+        document.getElementById('lines').textContent = data.lines || 0;
+        
+        // Update battle items if in multiplayer mode
+        if (this.currentMode !== 'single' && data.items) {
+            this.updateBattleItems(data.items);
+        }
+    }
+    
+    updateBattleItems(items) {
+        Object.keys(items).forEach(itemType => {
+            const itemSlot = document.querySelector(`[data-item="${itemType}"]`);
+            if (itemSlot) {
+                const countElement = itemSlot.querySelector('.item-count');
+                if (countElement) {
+                    countElement.textContent = items[itemType];
+                }
+            }
+        });
+    }
+    
+    handleGameOver(data) {
+        console.log('Game over:', data);
+        this.isGameActive = false;
+        
+        document.getElementById('finalScore').textContent = data.score || 0;
+        document.getElementById('gameOverlay').style.display = 'flex';
+        
+        // Update network status if in network mode
+        if (this.currentMode !== 'single') {
+            this.updateNetworkStatus(true, 'Game finished');
+        }
+    }
+    
+    restartGame() {
+        document.getElementById('gameOverlay').style.display = 'none';
+        
+        if (this.currentMode === 'single') {
+            this.startSinglePlayer();
+        } else {
+            // For network games, return to menu for now
+            this.showMainMenu();
+        }
+    }
+    
+    stopGame() {
+        if (this.game) {
+            this.game.stop();
+            this.game = null;
+        }
+        
+        // Hide overlays
+        document.getElementById('gameOverlay').style.display = 'none';
+        document.getElementById('pauseOverlay').style.display = 'none';
+        
+        this.isGameActive = false;
     }
     
     pauseGame() {
-        if (this.gameManager && this.gameManager.isPlaying) {
-            this.gameManager.pauseGame();
-            this.audioManager.pauseBackgroundMusic();
-        }
-    }
-    
-    resumeGame() {
-        if (this.gameManager && this.gameManager.isPaused) {
-            this.gameManager.resumeGame();
-            this.audioManager.resumeBackgroundMusic();
-        }
-    }
-    
-    handleKeyDown(e) {
-        // ESC키로 일시정지/메뉴 토글
-        if (e.code === 'Escape') {
-            e.preventDefault();
-            if (this.currentScreen === 'game') {
-                if (this.gameManager.isPlaying && !this.gameManager.isPaused) {
-                    this.pauseGame();
-                } else if (this.gameManager.isPaused) {
-                    this.resumeGame();
-                }
+        if (this.game && this.isGameActive) {
+            if (this.game.isPaused()) {
+                this.game.resume();
+                document.getElementById('pauseOverlay').style.display = 'none';
+            } else {
+                this.game.pause();
+                document.getElementById('pauseOverlay').style.display = 'flex';
             }
+        }
+    }
+    
+    handleKeyPress(e) {
+        // Prevent default for game keys
+        if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space'].includes(e.code)) {
+            e.preventDefault();
+        }
+        
+        switch (e.code) {
+            case 'KeyP':
+                if (this.isGameActive) {
+                    this.pauseGame();
+                }
+                break;
+                
+            case 'Escape':
+                if (this.isGameActive) {
+                    this.showMainMenu();
+                }
+                break;
+                
+            case 'KeyM':
+                // Mute toggle (to be implemented)
+                break;
+                
+            default:
+                if (this.game && this.isGameActive) {
+                    this.game.handleInput(e);
+                }
+                break;
+        }
+    }
+    
+    showSettings() {
+        console.log('Settings not implemented yet');
+        alert('Settings panel coming soon!');
+    }
+    
+    updateNetworkStatus(isOnline, message) {
+        const indicator = document.getElementById('statusIndicator');
+        const text = document.getElementById('statusText');
+        
+        if (isOnline) {
+            indicator.classList.add('online');
+            indicator.style.color = '#4ecdc4';
+        } else {
+            indicator.classList.remove('online');
+            indicator.style.color = '#ff4444';
+        }
+        
+        text.textContent = message;
+        this.menuManager.updateConnectionStatus(isOnline ? 'connected' : 'offline', message);
+    }
+    
+    // Room management methods
+    showRoomMenu() {
+        this.menuManager.showMenu('rooms');
+        this.connectIfNeeded();
+    }
+    
+    async connectIfNeeded() {
+        if (!this.networkManager.connected) {
+            try {
+                this.updateNetworkStatus(false, 'Connecting...');
+                await this.networkManager.connect();
+                this.updateNetworkStatus(true, 'Connected');
+            } catch (error) {
+                console.error('Connection failed:', error);
+                this.updateNetworkStatus(false, 'Connection failed');
+            }
+        }
+    }
+    
+    async createRoom() {
+        const roomName = document.getElementById('roomNameInput').value || 'New Room';
+        const maxPlayers = parseInt(document.getElementById('maxPlayersSelect').value) || 4;
+        
+        this.soundManager.play('move'); // Button click sound
+        
+        try {
+            await this.connectIfNeeded();
+            const roomData = await this.networkManager.createRoom(roomName, maxPlayers);
+            console.log('Room created successfully:', roomData);
+            this.soundManager.play('levelUp'); // Success sound
+        } catch (error) {
+            console.error('Failed to create room:', error);
+            this.soundManager.play('warning'); // Error sound
+            alert('Failed to create room: ' + (error.message || error));
+        }
+    }
+    
+    async joinRoom() {
+        const roomId = document.getElementById('roomIdInput').value;
+        const playerName = document.getElementById('playerNameInput').value || 'Anonymous';
+        
+        if (!roomId) {
+            alert('Please enter a Room ID');
             return;
         }
         
-        // 게임 중일 때만 게임 컨트롤 처리
-        if (this.currentScreen === 'game' && this.gameManager && this.gameManager.isPlaying) {
-            // 아이템 사용 키 (1-4)
-            if (['1', '2', '3', '4'].includes(e.key)) {
-                this.uiManager.handleItemKeyPress(e.key);
-                e.preventDefault();
-                return;
-            }
+        try {
+            await this.connectIfNeeded();
+            const joinData = await this.networkManager.joinRoom(roomId, playerName);
+            console.log('Joined room successfully:', joinData);
+        } catch (error) {
+            console.error('Failed to join room:', error);
+            alert('Failed to join room: ' + (error.message || error));
+        }
+    }
+    
+    async quickMatch() {
+        try {
+            await this.connectIfNeeded();
+            this.updateNetworkStatus(true, 'Finding match...');
+            const matchData = await this.networkManager.quickMatch();
+            console.log('Quick match found:', matchData);
+        } catch (error) {
+            console.error('Quick match failed:', error);
+            alert('Quick match failed: ' + (error.message || error));
+            this.updateNetworkStatus(true, 'Connected');
+        }
+    }
+    
+    leaveRoom() {
+        // Disconnect from current room
+        if (this.networkManager.connected) {
+            this.networkManager.disconnect();
+        }
+        this.showMainMenu();
+    }
+    
+    startMultiplayerGame() {
+        console.log('Requesting game start...');
+        if (this.networkManager.connected && this.networkManager.room) {
+            const message = {
+                type: 'START_GAME',
+                roomId: this.networkManager.room.id || this.networkManager.room.roomId
+            };
             
-            // 일반 게임 컨트롤
-            this.gameManager.handleKeyDown(e);
+            if (this.networkManager.send(message)) {
+                this.updateNetworkStatus(true, 'Starting game...');
+            } else {
+                alert('Failed to start game - not connected');
+            }
+        } else {
+            alert('Not connected to a room');
         }
     }
     
-    handleKeyUp(e) {
-        if (this.currentScreen === 'game' && this.gameManager && this.gameManager.isPlaying) {
-            this.gameManager.handleKeyUp(e);
-        }
+    // Room event handlers
+    handleRoomCreated(data) {
+        console.log('Room created event:', data);
+        this.menuManager.showMenu('waiting');
+        this.menuManager.updateRoomInfo({
+            name: 'New Room',
+            roomId: data.roomId,
+            playerCount: 1,
+            maxPlayers: data.maxPlayers || 4
+        });
+        this.menuManager.updatePlayersList(data.players || []);
+        this.menuManager.showStartGameButton(true); // Host can start game
+        this.updateNetworkStatus(true, 'In room (Host)');
     }
     
-    onGameOver(gameStats) {
-        const { score, level, lines, maxCombo, totalAttack, tSpinCount, itemsUsed } = gameStats;
+    handleRoomJoined(data) {
+        console.log('Room joined event:', data);
+        this.menuManager.showMenu('waiting');
         
-        // 게임 오버 처리
-        this.audioManager.playSound('gameOver');
-        this.audioManager.stopBackgroundMusic();
+        // Check if current player is host
+        const currentPlayerId = this.networkManager.playerId || this.networkManager.player;
+        const players = data.players || [];
         
-        // 최종 점수 표시
-        document.getElementById('finalScore').textContent = score.toLocaleString();
+        console.log('Current player ID:', currentPlayerId);
+        console.log('Players in room:', players);
         
-        // 게임 통계 표시
-        this.uiManager.showGameOverStats({
-            maxCombo,
-            totalAttack,
-            tSpinCount,
-            itemsUsed
+        const isHost = players.some(player => {
+            console.log(`Checking player ${player.id}, isHost: ${player.isHost}`);
+            return player.id === currentPlayerId && player.isHost;
         });
         
-        // 게임 오버 오버레이 표시
-        document.getElementById('gameOverOverlay').classList.remove('hidden');
+        console.log('Is current player host?', isHost);
         
-        console.log(`🎮 Game Over - Score: ${score}, Level: ${level}, Lines: ${lines}, Max Combo: ${maxCombo}, T-Spins: ${tSpinCount}`);
+        this.menuManager.updateRoomInfo({
+            name: 'Joined Room',
+            roomId: data.roomId,
+            playerCount: players.length,
+            maxPlayers: data.maxPlayers || 4
+        });
+        this.menuManager.updatePlayersList(players);
+        this.menuManager.showStartGameButton(isHost); // Host can start game
+        this.updateNetworkStatus(true, isHost ? 'In room (Host)' : 'In room');
     }
     
-    onLineCleared(clearData) {
-        const { lines, score, totalLines, level, combo, totalAttack, backToBack, tSpinType, clearType, items } = clearData;
-        
-        // 줄 제거 효과음
-        if (tSpinType) {
-            this.audioManager.playTSpinSound(tSpinType, lines);
-        } else {
-            this.audioManager.playLineClearSound(lines);
+    handlePlayerJoined(data) {
+        console.log('Player joined event:', data);
+        // Update player list in waiting room
+        if (this.menuManager.getCurrentMenu() === 'waiting') {
+            // Get updated room info from network manager if available
+            const roomData = this.networkManager.room;
+            if (roomData) {
+                this.menuManager.updateRoomInfo(roomData);
+            }
         }
-        
-        // 콤보 사운드
-        if (combo > 0) {
-            this.audioManager.playComboSound(combo);
-        }
-        
-        // UI 업데이트
-        this.uiManager.updateGameInfo(score, level, totalLines, combo, totalAttack, backToBack, tSpinType, items);
-        
-        // 클리어 알림 표시
-        this.uiManager.showClearNotification(clearType, lines);
-        
-        console.log(`🎯 Lines cleared: ${lines}, Score: +${score}, Total: ${totalLines}, Level: ${level}, Combo: ${combo}, Attack: ${totalAttack}`);
-    }
-    
-    onLevelUp(newLevel) {
-        // 레벨업 효과음 및 음악 변화
-        this.audioManager.playSound('levelUp');
-        this.audioManager.adjustMusicTempo(newLevel);
-        
-        console.log(`⬆️ Level up! New level: ${newLevel}`);
-    }
-    
-    showErrorMessage(message) {
-        this.uiManager.showToast(message, 'error');
-    }
-    
-    showSuccessMessage(message) {
-        this.uiManager.showToast(message, 'success');
-    }
-    
-    showInfoMessage(message) {
-        this.uiManager.showToast(message, 'info');
-    }
-    
-    confirmExit() {
-        this.uiManager.showModal(
-            '게임 종료',
-            '정말로 게임을 종료하시겠습니까?',
-            [
-                {
-                    text: '취소',
-                    type: 'secondary',
-                    callback: () => {}
-                },
-                {
-                    text: '종료',
-                    type: 'primary',
-                    callback: () => {
-                        this.cleanup();
-                        window.close();
-                    }
-                }
-            ]
-        );
-    }
-    
-    cleanup() {
-        // 리소스 정리
-        if (this.gameManager) {
-            this.gameManager.cleanup();
-        }
-        
-        if (this.audioManager) {
-            this.audioManager.cleanup();
-        }
-        
-        if (this.networkManager) {
-            this.networkManager.cleanup();
-        }
-        
-        console.log('🧹 App cleanup completed');
-    }
-    
-    // 네트워크 이벤트 처리
-    onPlayerJoined(playerId, playerInfo) {
-        this.showInfoMessage(`${playerInfo.name}님이 참여했습니다.`);
-    }
-    
-    onPlayerLeft(playerId, playerInfo) {
-        this.showInfoMessage(`${playerInfo.name}님이 나갔습니다.`);
-    }
-    
-    onGameStateUpdate(gameState) {
-        if (this.gameManager) {
-            this.gameManager.updateGameState(gameState);
-        }
-    }
-    
-    // 게임 상태 getter
-    get isPlaying() {
-        return this.gameManager ? this.gameManager.isPlaying : false;
-    }
-    
-    get isPaused() {
-        return this.gameManager ? this.gameManager.isPaused : false;
-    }
-    
-    get currentGameMode() {
-        return this.gameMode;
-    }
-    
-    get settings() {
-        return this.settingsManager ? this.settingsManager.settings : {};
     }
 }
 
-// 앱 인스턴스 생성 및 전역 접근 가능하도록 설정
-window.tetrisApp = new TetrisApp();
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.tetrisApp = new TetrisApp();
+});
 
-// 개발용 디버그 정보
-if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    console.log('🚀 Tetris App loaded in development mode');
-    window.DEBUG = {
-        gameManager: () => window.tetrisApp.gameManager,
-        audioManager: () => window.tetrisApp.audioManager,
-        networkManager: () => window.tetrisApp.networkManager,
-        settings: () => window.tetrisApp.settings
-    };
-}
+// Export for potential external access
+export default TetrisApp;

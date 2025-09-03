@@ -3,256 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Tetris - 온라인 멀티 배틀</title>
-    <link rel="stylesheet" href="styles/main.css">
-    <link rel="stylesheet" href="styles/game.css">
-    <link rel="stylesheet" href="styles/ui.css">
+    <title>Enhanced Tetris Battle</title>
+    <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-    <!-- 메인 메뉴 -->
-    <div id="mainMenu" class="screen active">
-        <div class="menu-container">
-            <h1 class="game-title">MODERN TETRIS</h1>
-            <p class="game-subtitle">온라인 멀티 배틀</p>
-            
-            <nav class="main-menu">
-                <button id="singleModeBtn" class="menu-btn primary">
-                    <span class="btn-icon">🎮</span>
-                    <span class="btn-text">싱글 모드</span>
-                </button>
+    <div class="app">
+        <!-- Main Menu -->
+        <div class="menu-container active" id="mainMenu">
+            <div class="menu-content">
+                <h1 class="game-title">🎮 TETRIS BATTLE 🎮</h1>
                 
-                <button id="oneVsOneBtn" class="menu-btn primary">
-                    <span class="btn-icon">⚔️</span>
-                    <span class="btn-text">1vs1 대전</span>
-                </button>
-                
-                <button id="multiBattleBtn" class="menu-btn primary">
-                    <span class="btn-icon">👥</span>
-                    <span class="btn-text">멀티 배틀</span>
-                </button>
-                
-                <button id="settingsBtn" class="menu-btn secondary">
-                    <span class="btn-icon">⚙️</span>
-                    <span class="btn-text">설정</span>
-                </button>
-                
-                <button id="exitBtn" class="menu-btn secondary">
-                    <span class="btn-icon">🚪</span>
-                    <span class="btn-text">종료</span>
-                </button>
-            </nav>
-        </div>
-    </div>
-
-    <!-- 게임 화면 -->
-    <div id="gameScreen" class="screen">
-        <div class="game-container">
-            <!-- 게임 정보 패널 -->
-            <div class="game-info-panel">
-                <div class="score-section">
-                    <h3>점수</h3>
-                    <div id="score" class="score-value">0</div>
-                </div>
-                
-                <div class="level-section">
-                    <h3>레벨</h3>
-                    <div id="level" class="level-value">1</div>
-                </div>
-                
-                <div class="lines-section">
-                    <h3>제거된 줄</h3>
-                    <div id="lines" class="lines-value">0</div>
-                </div>
-                
-                <div class="combo-section">
-                    <h3>콤보</h3>
-                    <div id="combo" class="combo-value">0</div>
-                </div>
-                
-                <div class="attack-section">
-                    <h3>공격력</h3>
-                    <div id="totalAttack" class="attack-value">0</div>
-                </div>
-                
-                <div class="status-section">
-                    <div id="backToBackIndicator" class="status-indicator hidden">
-                        <span class="b2b-text">B2B!</span>
-                    </div>
-                    <div id="tSpinIndicator" class="status-indicator hidden">
-                        <span class="tspin-text">T-SPIN!</span>
-                    </div>
-                    <div id="shieldIndicator" class="status-indicator hidden">
-                        <span class="shield-text">🛡️ SHIELD</span>
-                    </div>
-                </div>
-                
-                <div class="next-block-section">
-                    <h3>다음 블록</h3>
-                    <canvas id="nextBlockCanvas" width="120" height="120"></canvas>
+                <div class="game-modes">
+                    <button class="mode-btn" data-mode="single" id="singlePlayerBtn">
+                        <div class="mode-icon">🎯</div>
+                        <div class="mode-title">Single Player</div>
+                        <div class="mode-desc">Classic Tetris</div>
+                    </button>
+                    
+                    <button class="mode-btn" data-mode="battle" id="battleModeBtn">
+                        <div class="mode-icon">⚔️</div>
+                        <div class="mode-title">1 vs 1 Battle</div>
+                        <div class="mode-desc">Online multiplayer</div>
+                    </button>
+                    
+                    <button class="mode-btn" data-mode="multi" id="multiModeBtn">
+                        <div class="mode-icon">👥</div>
+                        <div class="mode-title">4 Player Battle</div>
+                        <div class="mode-desc">Multi-player arena</div>
+                    </button>
+                    
+                    <button class="mode-btn" data-mode="settings" id="settingsBtn">
+                        <div class="mode-icon">⚙️</div>
+                        <div class="mode-title">Settings</div>
+                        <div class="mode-desc">Game configuration</div>
+                    </button>
                 </div>
             </div>
-            
-            <!-- 메인 게임 보드 -->
-            <div class="game-board-container">
-                <canvas id="gameBoard" width="300" height="600"></canvas>
-                <div id="gameOverOverlay" class="game-over-overlay hidden">
-                    <div class="game-over-content">
-                        <h2>게임 오버!</h2>
-                        <p>최종 점수: <span id="finalScore">0</span></p>
-                        <div class="final-stats">
-                            <!-- 게임 통계가 동적으로 생성됩니다 -->
+        </div>
+
+        <!-- Room Selection Menu -->
+        <div class="menu-container" id="roomMenu">
+            <div class="menu-content">
+                <h1 class="menu-title">🏠 Multiplayer Rooms</h1>
+                
+                <div class="room-options">
+                    <div class="option-group">
+                        <h3>Create New Room</h3>
+                        <div class="input-group">
+                            <input type="text" id="roomNameInput" placeholder="Room Name" maxlength="20">
+                            <select id="maxPlayersSelect">
+                                <option value="2">2 Players</option>
+                                <option value="4" selected>4 Players</option>
+                            </select>
                         </div>
-                        <button id="restartBtn" class="menu-btn primary">다시 시작</button>
-                        <button id="backToMenuBtn" class="menu-btn secondary">메인 메뉴</button>
+                        <button class="btn primary" id="createRoomBtn">Create Room</button>
+                    </div>
+                    
+                    <div class="option-group">
+                        <h3>Join Existing Room</h3>
+                        <div class="input-group">
+                            <input type="text" id="roomIdInput" placeholder="Room ID">
+                            <input type="text" id="playerNameInput" placeholder="Your Name" maxlength="15">
+                        </div>
+                        <button class="btn primary" id="joinRoomBtn">Join Room</button>
+                    </div>
+                    
+                    <div class="option-group">
+                        <h3>Quick Match</h3>
+                        <p>Join any available room automatically</p>
+                        <button class="btn success" id="quickMatchBtn">Quick Match</button>
+                    </div>
+                </div>
+                
+                <div class="menu-footer">
+                    <button class="btn secondary" id="backToMainBtn">← Back to Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Room Waiting Screen -->
+        <div class="menu-container" id="waitingRoom">
+            <div class="menu-content">
+                <h1 class="menu-title">🎮 Room: <span id="currentRoomName">-</span></h1>
+                <p class="room-id">Room ID: <span id="currentRoomId">-</span></p>
+                
+                <div class="players-list">
+                    <h3>Players (<span id="playerCount">0</span>/<span id="maxPlayers">4</span>)</h3>
+                    <div class="players-grid" id="playersGrid">
+                        <!-- Players will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <div class="room-settings">
+                    <h3>Game Settings</h3>
+                    <div class="setting-item">
+                        <label>Items Enabled</label>
+                        <input type="checkbox" id="itemsEnabled" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label>Starting Level</label>
+                        <select id="startLevel">
+                            <option value="1" selected>1</option>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="room-actions">
+                    <button class="btn primary" id="startGameBtn" style="display: none;">Start Game</button>
+                    <button class="btn danger" id="leaveRoomBtn">Leave Room</button>
+                </div>
+                
+                <div class="connection-status">
+                    <span id="connectionStatus">Connecting...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Container -->
+        <div class="game-container" id="gameContainer">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <div class="game-info">
+                    <div class="stat-box">
+                        <h3>Score</h3>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <h3>Level</h3>
+                        <div class="stat-value" id="level">1</div>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <h3>Lines</h3>
+                        <div class="stat-value" id="lines">0</div>
+                    </div>
+                    
+                    <div class="next-piece">
+                        <h3>Next</h3>
+                        <canvas id="nextCanvas" width="120" height="120"></canvas>
+                    </div>
+                    
+                    <div class="hold-piece">
+                        <h3>Hold</h3>
+                        <canvas id="holdCanvas" width="120" height="120"></canvas>
                     </div>
                 </div>
             </div>
-            
-            <!-- 멀티플레이어 보드들 (멀티 배틀 모드용) -->
-            <div id="multiplayerBoards" class="multiplayer-boards hidden">
-                <div class="opponent-board">
-                    <h4>상대방 1</h4>
-                    <canvas id="opponentBoard1" width="150" height="300"></canvas>
-                </div>
-                <div class="opponent-board">
-                    <h4>상대방 2</h4>
-                    <canvas id="opponentBoard2" width="150" height="300"></canvas>
-                </div>
-                <div class="opponent-board">
-                    <h4>상대방 3</h4>
-                    <canvas id="opponentBoard3" width="150" height="300"></canvas>
+
+            <!-- Main Game Board -->
+            <div class="center-panel">
+                <div class="game-board">
+                    <canvas id="gameCanvas" width="300" height="600"></canvas>
+                    
+                    <!-- Game Over Overlay -->
+                    <div class="game-over" id="gameOverlay" style="display: none;">
+                        <div class="overlay-content">
+                            <h2>Game Over</h2>
+                            <p>Final Score: <span id="finalScore">0</span></p>
+                            <div class="overlay-buttons">
+                                <button class="btn primary" id="restartBtn">Play Again</button>
+                                <button class="btn secondary" id="menuBtn">Main Menu</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pause Overlay -->
+                    <div class="pause-overlay" id="pauseOverlay" style="display: none;">
+                        <div class="overlay-content">
+                            <h2>Paused</h2>
+                            <p>Press P to resume</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <!-- 아이템 패널 -->
-            <div class="items-panel">
-                <h3>아이템</h3>
-                <div class="items-grid">
-                    <div class="item-slot" data-item="shield">
-                        <div class="item-icon">🛡️</div>
-                        <div class="item-count">0</div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <!-- Battle Items (only visible in multiplayer) -->
+                <div class="battle-items" id="battleItems" style="display: none;">
+                    <h3>Battle Items</h3>
+                    <div class="items-grid">
+                        <div class="item-slot" data-item="line-clear">
+                            <div class="item-icon">💥</div>
+                            <div class="item-name">Line Clear</div>
+                            <div class="item-count">0</div>
+                        </div>
+                        <div class="item-slot" data-item="block-bomb">
+                            <div class="item-icon">💣</div>
+                            <div class="item-name">Block Bomb</div>
+                            <div class="item-count">0</div>
+                        </div>
+                        <div class="item-slot" data-item="speed-up">
+                            <div class="item-icon">⚡</div>
+                            <div class="item-name">Speed Up</div>
+                            <div class="item-count">0</div>
+                        </div>
+                        <div class="item-slot" data-item="shuffle">
+                            <div class="item-icon">🔀</div>
+                            <div class="item-name">Shuffle</div>
+                            <div class="item-count">0</div>
+                        </div>
                     </div>
-                    <div class="item-slot" data-item="attack">
-                        <div class="item-icon">⚡</div>
-                        <div class="item-count">0</div>
+                </div>
+
+                <!-- Opponent Boards (only visible in multiplayer) -->
+                <div class="opponent-boards" id="opponentBoards" style="display: none;">
+                    <h3>Opponents</h3>
+                    <div class="opponents-grid" id="opponentsGrid">
+                        <!-- Opponent boards will be dynamically created -->
                     </div>
-                    <div class="item-slot" data-item="lineClear">
-                        <div class="item-icon">💫</div>
-                        <div class="item-count">0</div>
+                </div>
+
+                <!-- Game Controls -->
+                <div class="controls-info">
+                    <h3>Controls</h3>
+                    <div class="control-item">
+                        <span>Move</span>
+                        <span class="key">← →</span>
                     </div>
-                    <div class="item-slot" data-item="slowDown">
-                        <div class="item-icon">🐌</div>
-                        <div class="item-count">0</div>
+                    <div class="control-item">
+                        <span>Rotate</span>
+                        <span class="key">↑ Z X</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Drop</span>
+                        <span class="key">↓ Space</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Hold</span>
+                        <span class="key">C</span>
+                    </div>
+                    <div class="control-item">
+                        <span>Pause</span>
+                        <span class="key">P</span>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- 게임 조작 가이드 -->
-        <div class="controls-guide">
-            <h4>조작법</h4>
-            <div class="control-item">
-                <span class="key">←→</span> 좌우 이동
-            </div>
-            <div class="control-item">
-                <span class="key">↑</span> 회전
-            </div>
-            <div class="control-item">
-                <span class="key">↓</span> 빠른 하강
-            </div>
-            <div class="control-item">
-                <span class="key">SPACE</span> 즉시 하강
-            </div>
-            <div class="control-item">
-                <span class="key">C</span> 홀드
-            </div>
-            <div class="control-item">
-                <span class="key">1-4</span> 아이템 사용
-            </div>
+
+        <!-- Network Status -->
+        <div class="network-status" id="networkStatus">
+            <div class="status-indicator" id="statusIndicator">●</div>
+            <span id="statusText">Offline</span>
         </div>
     </div>
 
-    <!-- 온라인 로비 -->
-    <div id="lobbyScreen" class="screen">
-        <div class="lobby-container">
-            <h2>온라인 로비</h2>
-            
-            <div class="lobby-tabs">
-                <button id="createRoomTab" class="tab-btn active">방 만들기</button>
-                <button id="joinRoomTab" class="tab-btn">방 참여</button>
-                <button id="quickMatchTab" class="tab-btn">빠른 매칭</button>
-            </div>
-            
-            <div id="createRoomPanel" class="lobby-panel active">
-                <input type="text" id="roomName" placeholder="방 이름을 입력하세요" maxlength="20">
-                <select id="maxPlayers">
-                    <option value="2">2명</option>
-                    <option value="3">3명</option>
-                    <option value="4">4명</option>
-                </select>
-                <button id="createRoomBtn" class="menu-btn primary">방 만들기</button>
-            </div>
-            
-            <div id="joinRoomPanel" class="lobby-panel">
-                <div id="roomList" class="room-list">
-                    <!-- 방 목록이 동적으로 생성됩니다 -->
-                </div>
-                <button id="refreshRoomsBtn" class="menu-btn secondary">새로고침</button>
-            </div>
-            
-            <div id="quickMatchPanel" class="lobby-panel">
-                <div class="quick-match-info">
-                    <p>실력이 비슷한 플레이어와 자동 매칭됩니다</p>
-                    <div id="matchingStatus" class="matching-status hidden">
-                        <div class="loading-spinner"></div>
-                        <p>매칭 중...</p>
-                    </div>
-                </div>
-                <button id="startQuickMatchBtn" class="menu-btn primary">빠른 매칭 시작</button>
-            </div>
-            
-            <button id="backToMainBtn" class="menu-btn secondary">메인 메뉴로</button>
-        </div>
-    </div>
-
-    <!-- 설정 화면 -->
-    <div id="settingsScreen" class="screen">
-        <div class="settings-container">
-            <h2>게임 설정</h2>
-            
-            <div class="setting-group">
-                <label for="musicVolume">배경 음악 볼륨</label>
-                <input type="range" id="musicVolume" min="0" max="100" value="70">
-                <span class="volume-value">70%</span>
-            </div>
-            
-            <div class="setting-group">
-                <label for="effectVolume">효과음 볼륨</label>
-                <input type="range" id="effectVolume" min="0" max="100" value="80">
-                <span class="volume-value">80%</span>
-            </div>
-            
-            <div class="setting-group">
-                <label>
-                    <input type="checkbox" id="showGrid" checked>
-                    게임 보드 격자 표시
-                </label>
-            </div>
-            
-            <div class="setting-group">
-                <label>
-                    <input type="checkbox" id="showGhost" checked>
-                    고스트 블록 표시 (착지 예상 위치)
-                </label>
-            </div>
-            
-            <button id="resetSettingsBtn" class="menu-btn secondary">기본값으로 리셋</button>
-            <button id="saveSettingsBtn" class="menu-btn primary">설정 저장</button>
-            <button id="settingsBackBtn" class="menu-btn secondary">돌아가기</button>
-        </div>
-    </div>
-
-    <!-- 모듈 스크립트 로드 -->
+    <!-- Scripts -->
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
